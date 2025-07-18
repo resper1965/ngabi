@@ -1,0 +1,12 @@
+# Node  
+node_modules/  
+dist/  
+# Python  
+__pycache__/  
+*.py[cod]  
+# n8n  
+n8n/  
+.n8n/  
+# Docker  
+**/docker-compose.override.yml  
+.env 
