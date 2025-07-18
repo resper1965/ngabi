@@ -1,15 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+from app.models import Tenant
 
 router = APIRouter()
-
-class Tenant(BaseModel):
-    id: str
-    name: str
-    domain: str
-    settings: dict
-    active: bool = True
 
 class TenantCreate(BaseModel):
     name: str

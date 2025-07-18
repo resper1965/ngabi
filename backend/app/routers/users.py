@@ -1,16 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from app.models import User
 
 router = APIRouter()
-
-class User(BaseModel):
-    id: str
-    email: str
-    name: str
-    tenant_id: str
-    role: str
-    active: bool = True
 
 class UserCreate(BaseModel):
     email: str
