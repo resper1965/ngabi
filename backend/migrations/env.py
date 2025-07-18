@@ -4,6 +4,10 @@ from sqlalchemy import pool
 from alembic import context
 import os
 import sys
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente do .env
+load_dotenv()
 
 # Adicionar o diretório raiz ao path para importar os modelos
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -24,6 +28,25 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 target_metadata = Base.metadata
+
+# Configurar URL do banco dinamicamente a partir do .env
+def get_url():
+    """Obter URL do banco de dados do .env"""
+    postgres_url = os.getenv("POSTGRES_URL")
+    if postgres_url:
+        return postgres_url
+    
+    # Fallback para configuração padrão
+    user = os.getenv("POSTGRES_USER", "postgres")
+    password = os.getenv("POSTGRES_PASSWORD", "postgres")
+    host = os.getenv("POSTGRES_HOST", "localhost")
+    port = os.getenv("POSTGRES_PORT", "5432")
+    database = os.getenv("POSTGRES_DB", "chat_agents")
+    
+    return f"postgresql://{user}:{password}@{host}:{port}/{database}"
+
+# Sobrescrever a URL do banco com a do .env
+config.set_main_option("sqlalchemy.url", get_url())
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

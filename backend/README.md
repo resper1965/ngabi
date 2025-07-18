@@ -18,7 +18,23 @@ cp ../env.example .env
 # Editar .env com suas configurações de banco
 ```
 
-### 2. Executar Migrations
+### 2. Configuração do Alembic
+
+O Alembic está configurado para usar automaticamente a variável `POSTGRES_URL` do arquivo `.env`:
+
+```bash
+# Se você tem POSTGRES_URL no .env:
+POSTGRES_URL=postgresql://user:password@host:port/database
+
+# Ou configure individualmente:
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=chat_agents
+```
+
+### 3. Executar Migrations
 
 ```bash
 # Executar migrations automaticamente
@@ -28,7 +44,7 @@ python scripts/run_migrations.py
 alembic upgrade head
 ```
 
-### 3. Inserir Dados de Teste
+### 4. Inserir Dados de Teste
 
 ```bash
 # Executar seed com dados de teste
@@ -115,7 +131,7 @@ O sistema implementa isolamento lógico por tenant:
 # Verificar status das migrations
 alembic current
 
-# Criar nova migration
+# Criar nova migration (quando Alembic estiver instalado)
 alembic revision --autogenerate -m "descrição"
 
 # Reverter migration
@@ -130,6 +146,22 @@ alembic upgrade head
 python scripts/seed_data.py
 ```
 
+## 📝 Arquivos de Configuração Alembic
+
+### `alembic.ini`
+- Configuração principal do Alembic
+- URL do banco configurada dinamicamente no `env.py`
+
+### `migrations/env.py`
+- Carrega variáveis do `.env`
+- Configura URL do banco dinamicamente
+- Importa todos os modelos SQLAlchemy
+- Suporte a `POSTGRES_URL` ou configuração individual
+
+### `migrations/script.py.mako`
+- Template para geração de migrations
+- Configuração padrão do Alembic
+
 ## 📝 Notas Importantes
 
 1. **Isolamento**: Sempre use repositórios com tenant_id
@@ -137,6 +169,7 @@ python scripts/seed_data.py
 3. **Cascade**: Deletar tenant remove todos os dados relacionados
 4. **Índices**: Criados automaticamente para performance
 5. **Timestamps**: Todos os registros têm created_at/updated_at
+6. **POSTGRES_URL**: Prioridade sobre configuração individual
 
 ## 🔧 Troubleshooting
 
@@ -166,4 +199,13 @@ alembic current
 
 # Executar seed novamente
 python scripts/seed_data.py
+```
+
+### Erro de Configuração Alembic
+```bash
+# Verificar se .env está configurado
+cat .env | grep POSTGRES
+
+# Verificar se variáveis estão sendo carregadas
+python -c "from dotenv import load_dotenv; load_dotenv(); import os; print(os.getenv('POSTGRES_URL'))"
 ``` 
