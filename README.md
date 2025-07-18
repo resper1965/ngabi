@@ -12,9 +12,9 @@ Plataforma de chat multi-agentes (React, FastAPI, n8n, Pinecone, Elasticsearch).
 
 ## Setup Rápido  
 1. Clone o repositório  
-2. Copie `.env.example` para `.env` e preencha as chaves  
+2. Copie `.env.example` para `.env` e preencha as chaves (incluindo `WEBHOOK_URL`)  
 3. `docker-compose up --build`  
-4. Frontend: http://localhost:3000 | API: http://localhost:8000 | n8n: http://localhost:5678  
+4. Frontend: http://localhost:3000 | API: http://localhost:8000 | n8n: ${WEBHOOK_URL}  
 
 ## Roadmap  
 - v0.1.0: Esqueleto backend, frontend, n8n  
