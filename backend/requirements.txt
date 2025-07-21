@@ -7,4 +7,5 @@ python-multipart==0.0.9
 python-dotenv==1.0.1
 supabase==2.3.4
 httpx<0.26,>=0.24
-prometheus-client==0.20.0 
+prometheus-client==0.20.0
+slowapi==0.1.9 
