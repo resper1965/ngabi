@@ -9,6 +9,7 @@ import logging
 
 from app.core.rate_limiting import setup_rate_limiting
 from app.core.cache import cache_health_check, get_cache_stats
+from app.core.metrics import setup_prometheus_metrics, metrics
 from app.middleware.rate_limit_middleware import (
     RateLimitMiddleware,
     LoggingMiddleware,
@@ -48,6 +49,9 @@ app.add_middleware(
 
 # Configurar slowapi
 setup_rate_limiting(app)
+
+# Configurar métricas Prometheus
+setup_prometheus_metrics(app, metrics)
 
 # Adicionar middleware personalizado
 app.add_middleware(LoggingMiddleware)
@@ -125,6 +129,19 @@ async def get_cache_stats_endpoint(request: Request):
     
     tenant_id = get_tenant_id_from_request(request)
     return get_cache_stats(tenant_id)
+
+@app.get("/secrets/health")
+async def get_secrets_health():
+    """
+    Endpoint para verificar saúde dos secrets.
+    """
+    from app.core.config import settings
+    
+    return {
+        "status": "healthy" if settings.validate_secrets() else "unhealthy",
+        "secrets_info": settings.get_secrets_info(),
+        "timestamp": "2024-01-01T00:00:00Z"
+    }
 
 # =============================================================================
 # HANDLERS DE ERRO

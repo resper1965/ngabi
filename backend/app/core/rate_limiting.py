@@ -10,6 +10,12 @@ from fastapi import Request, HTTPException, Depends
 from typing import Optional
 import logging
 
+try:
+    from app.core.metrics import record_rate_limit_metric
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+
 # Configurar logger
 logger = logging.getLogger(__name__)
 

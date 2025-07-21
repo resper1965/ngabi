@@ -15,6 +15,12 @@ import redis
 from fastapi import Request, HTTPException
 from pydantic import BaseModel
 
+try:
+    from app.core.metrics import record_cache_metric
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 class CacheConfig:

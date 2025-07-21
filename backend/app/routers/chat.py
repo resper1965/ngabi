@@ -26,6 +26,7 @@ from app.core.cache import (
     get_cache_stats,
     cache_health_check
 )
+from app.core.metrics import record_chat_metric, metrics
 from app.models import ChatHistory, Agent, User
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage
 from app.repositories.base import BaseRepository
