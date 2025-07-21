@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     gnupg2 \
     lsb-release \
     software-properties-common \
+    nodejs \
+    npm \
     git \
     build-essential \
     libpq-dev \
@@ -60,6 +62,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código da aplicação
 COPY . .
 
+# Clonar Evolution API
+RUN git clone https://github.com/EvolutionAPI/evolution-api.git /app/evolution-api
+
+# Instalar dependências da Evolution API
+WORKDIR /app/evolution-api
+RUN npm install
+
+# Voltar para o diretório principal
+WORKDIR /app
+
 # Tornar o script de inicialização executável
 RUN chmod +x docker-entrypoint.sh
 
@@ -77,7 +89,7 @@ RUN mkdir -p /etc/redis && echo "daemonize yes" > /etc/redis/redis.conf
 RUN chown -R elasticsearch:elasticsearch /var/lib/elasticsearch
 
 # Expor portas
-EXPOSE 8000 5432 6379 9200
+EXPOSE 8000 8080 5432 6379 9200
 
 # Usar o script de inicialização
 ENTRYPOINT ["./docker-entrypoint.sh"] 
