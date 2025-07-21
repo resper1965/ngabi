@@ -7,7 +7,6 @@ Backend da aplicação n.Gabi com bancos integrados (PostgreSQL, Redis, Elastics
 Este backend inclui todos os serviços necessários em um único container:
 
 - **FastAPI** - API principal
-- **Chatwoot** - Sistema de chat e suporte ao cliente
 - **PostgreSQL** - Banco de dados principal
 - **Redis** - Cache e sessões
 - **Elasticsearch** - Busca e indexação
@@ -48,10 +47,8 @@ CORS_ORIGINS=https://ngabi.ness.tec.br,https://www.ngabi.ness.tec.br
 
 ### Configuração de Domínio
 
-- **API Host**: `api.ngabi.ness.tec.br`
-- **API Porta**: `8000`
-- **Chatwoot Host**: `chatwoot.ngabi.ness.tec.br`
-- **Chatwoot Porta**: `3000`
+- **Host**: `api.ngabi.ness.tec.br`
+- **Porta**: `8000`
 - **Protocolo**: `HTTP`
 - **HTTPS**: Habilitado
 
@@ -73,7 +70,6 @@ docker-compose up --build
 
 - **API**: http://localhost:8000
 - **Docs**: http://localhost:8000/docs
-- **Chatwoot**: http://localhost:3000
 - **PostgreSQL**: localhost:5432
 - **Redis**: localhost:6379
 - **Elasticsearch**: http://localhost:9200

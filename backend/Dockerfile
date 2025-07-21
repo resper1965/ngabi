@@ -14,17 +14,12 @@ RUN apt-get update && apt-get install -y \
     gnupg2 \
     lsb-release \
     software-properties-common \
-    nodejs \
-    npm \
     git \
     build-essential \
     libpq-dev \
     libssl-dev \
     libreadline-dev \
     zlib1g-dev \
-    ruby \
-    ruby-dev \
-    ruby-bundler \
     && rm -rf /var/lib/apt/lists/*
 
 # Configurar Python
@@ -65,17 +60,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código da aplicação
 COPY . .
 
-# Clonar Chatwoot
-RUN git clone https://github.com/chatwoot/chatwoot.git /app/chatwoot
-
-# Instalar dependências do Chatwoot
-WORKDIR /app/chatwoot
-RUN bundle install
-RUN npm install
-
-# Voltar para o diretório principal
-WORKDIR /app
-
 # Tornar o script de inicialização executável
 RUN chmod +x docker-entrypoint.sh
 
@@ -93,7 +77,7 @@ RUN mkdir -p /etc/redis && echo "daemonize yes" > /etc/redis/redis.conf
 RUN chown -R elasticsearch:elasticsearch /var/lib/elasticsearch
 
 # Expor portas
-EXPOSE 8000 3000 5432 6379 9200
+EXPOSE 8000 5432 6379 9200
 
 # Usar o script de inicialização
 ENTRYPOINT ["./docker-entrypoint.sh"] 
