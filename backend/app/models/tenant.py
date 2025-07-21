@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy import Column, String, DateTime, Text, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -18,6 +18,12 @@ class Tenant(Base):
     agents = relationship("Agent", back_populates="tenant", cascade="all, delete-orphan")
     settings = relationship("TenantSettings", back_populates="tenant", uselist=False, cascade="all, delete-orphan")
     chat_history = relationship("ChatHistory", back_populates="tenant", cascade="all, delete-orphan")
+    
+    # Índices
+    __table_args__ = (
+        Index('idx_tenants_subdomain', 'subdomain'),
+        Index('idx_tenants_created_at', 'created_at'),
+    )
     
     def __repr__(self):
         return f"<Tenant(id={self.id}, name='{self.name}', subdomain='{self.subdomain}')>" 

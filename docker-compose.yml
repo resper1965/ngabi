@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   frontend:
     build: ./frontend
@@ -10,10 +9,18 @@ services:
       - ./frontend:/app
     environment:
       - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   backend:
     build: ./backend
@@ -23,16 +30,27 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/chat_agents
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/chat_agents
       - REDIS_URL=redis://redis:6379
       - ELASTICSEARCH_URL=http://elasticsearch:9200
     depends_on:
-      - postgres
-      - redis
-      - elasticsearch
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   n8n:
     image: n8nio/n8n:latest
@@ -40,18 +58,26 @@ services:
     restart: always
     ports:
       - "5678:5678"
+    env_file:
+      - .env
     environment:
       - N8N_HOST=0.0.0.0
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=password
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-password}
       - WEBHOOK_URL=http://localhost:5678
     volumes:
       - ./n8n:/home/node/.n8n
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   elasticsearch:
     image: elasticsearch:7.17.0
@@ -61,15 +87,23 @@ services:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - xpack.security.enabled=false
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
     ports:
       - "9200:9200"
     volumes:
       - esdata:/usr/share/elasticsearch/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   redis:
-    image: redis:6
+    image: redis:7-alpine
     container_name: redis
     restart: always
     ports:
@@ -78,21 +112,35 @@ services:
       - redisdata:/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   postgres:
-    image: postgres:14
+    image: postgres:15-alpine
     container_name: postgres
     restart: always
+    env_file:
+      - .env
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=chat_agents
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-chat_agents}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-chat_agents}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   esdata:

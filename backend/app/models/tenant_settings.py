@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -19,6 +19,11 @@ class TenantSettings(Base):
     
     # Relacionamentos
     tenant = relationship("Tenant", back_populates="settings")
+    
+    # Índices
+    __table_args__ = (
+        Index('idx_tenant_settings_updated_at', 'updated_at'),
+    )
     
     def __repr__(self):
         return f"<TenantSettings(tenant_id={self.tenant_id}, orchestrator_name='{self.orchestrator_name}')>" 
