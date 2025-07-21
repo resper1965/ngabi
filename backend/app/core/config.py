@@ -4,13 +4,11 @@ Configurações da aplicação com suporte a secrets.
 
 import os
 from typing import Optional
-from pydantic import BaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
-try:
-    from app.core.secrets import secrets_service
-    SECRETS_AVAILABLE = True
-except ImportError:
-    SECRETS_AVAILABLE = False
+# Desabilitar sistema de secrets temporariamente para focar no Supabase
+SECRETS_AVAILABLE = False
 
 class Settings(BaseSettings):
     """Configurações da aplicação com suporte a secrets."""
@@ -32,7 +30,7 @@ class Settings(BaseSettings):
     aws_region: str = "us-east-1"
     
     # Configurações de cache
-    redis_url: str = "redis://localhost:6379/0"
+    redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
     cache_enabled: bool = True
     cache_ttl: int = 3600
     

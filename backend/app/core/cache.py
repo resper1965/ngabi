@@ -332,7 +332,13 @@ class RedisCache:
             }
 
 # Instância global do cache
-cache_config = CacheConfig()
+from app.core.config import settings
+
+cache_config = CacheConfig(
+    redis_url=settings.redis_url,
+    cache_enabled=settings.cache_enabled,
+    default_ttl=settings.cache_ttl
+)
 redis_cache = RedisCache(cache_config)
 
 def cache_response(ttl: Optional[int] = None, key_func: Optional[callable] = None):

@@ -237,8 +237,10 @@ def reset_rate_limits(request: Request):
     return {"message": "Rate limits resetados", "tenant_id": tenant_id}
 
 # Configurações de ambiente
-RATE_LIMIT_ENABLED = True  # Pode ser controlado por variável de ambiente
-RATE_LIMIT_STORAGE_URL = "redis://localhost:6379/0"  # Storage para rate limits
+from app.core.config import settings
+
+RATE_LIMIT_ENABLED = settings.rate_limit_enabled
+RATE_LIMIT_STORAGE_URL = settings.redis_url  # Storage para rate limits
 
 # Função para verificar se rate limiting está habilitado
 def is_rate_limiting_enabled() -> bool:
