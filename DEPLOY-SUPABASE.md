@@ -25,7 +25,7 @@
   SUPABASE_URL=http://supabase:8000
   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE
   REDIS_URL=redis://ngabi-redis:6379
-  JWT_SECRET_KEY=NgabiJWT2024!SuperSecretKeyWithAtLeast32CharactersLong
+  JWT_SECRET_KEY=your-super-secret-jwt-token-with-at-least-32-characters-long
   JWT_ALGORITHM=HS256
   ACCESS_TOKEN_EXPIRE_MINUTES=30
   CORS_ORIGINS=https://ngabi.ness.tec.br,https://www.ngabi.ness.tec.br,https://api.ngabi.ness.tec.br
