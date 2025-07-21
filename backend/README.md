@@ -1,14 +1,14 @@
 # n.Gabi Backend
 
-Backend da aplicação n.Gabi com bancos integrados (PostgreSQL, Redis, Elasticsearch).
+Backend da aplicação n.Gabi com Supabase.
 
 ## 🏗️ Arquitetura
 
 Este backend inclui a aplicação FastAPI principal:
 
 - **FastAPI** - API principal do n.Gabi
+- **Supabase** - Banco de dados PostgreSQL + Auth + Real-time
 - **Redis** - Cache e sessões (opcional)
-- **Bancos externos** - PostgreSQL e Elasticsearch como serviços separados
 
 ## 🚀 Deploy no Easypanel
 
@@ -29,9 +29,9 @@ Este backend inclui a aplicação FastAPI principal:
 ### Variáveis de Ambiente
 
 ```env
-DATABASE_URL=postgresql://postgres:NgabiDB2024!Secure@ngabi-postgres:5432/chat_agents
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
 REDIS_URL=redis://ngabi-redis:6379
-ELASTICSEARCH_URL=http://ngabi-elasticsearch:9200
 JWT_SECRET_KEY=NgabiJWT2024!SuperSecretKey123
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30

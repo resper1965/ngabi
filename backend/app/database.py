@@ -3,8 +3,18 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 import os
+from supabase import create_client, Client
 
-# Configuração do banco de dados
+# Configuração do Supabase
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+
+# Cliente Supabase
+supabase: Client = None
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Configuração do banco de dados (PostgreSQL do Supabase)
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/chat_agents")
 
 # Criar engine do SQLAlchemy
@@ -54,4 +64,10 @@ def get_tenant_db(tenant_id: str):
         with TenantSession(db, tenant_id) as tenant_db:
             yield tenant_db
     finally:
-        db.close() 
+        db.close()
+
+# Função para obter cliente Supabase
+def get_supabase() -> Client:
+    if not supabase:
+        raise Exception("Supabase não configurado. Configure SUPABASE_URL e SUPABASE_ANON_KEY")
+    return supabase 
