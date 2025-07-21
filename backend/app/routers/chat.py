@@ -72,7 +72,7 @@ async def send_chat_message(
     # Por exemplo, chamar OpenAI, processar resposta, etc.
     
     # Simular resposta (em produção, seria a resposta real do LLM)
-            response_text = f"Resposta do agente {agent['name']}: {request.message}"
+    response_text = f"Resposta do agente {agent['name']}: {request.message}"
     
     # Criar resposta
     chat_response = ChatResponse(
@@ -98,23 +98,23 @@ async def send_chat_message(
     
     # Salvar no histórico (opcional - pode ser feito em background)
     try:
-        chat_history = ChatHistory(
-            tenant_id=uuid.UUID(tenant_id),
-            user_id=request.user_id,
-            agent_id=request.agent_id,
-            message=request.message,
-            response=response_text,
-            chat_mode=request.chat_mode,
-            use_author_voice=request.use_author_voice
-        )
+        # Salvar no Supabase
+        history_data = {
+            'tenant_id': tenant_id,
+            'user_id': str(request.user_id),
+            'agent_id': str(request.agent_id),
+            'message': request.message,
+            'response': response_text,
+            'chat_mode': request.chat_mode,
+            'use_author_voice': request.use_author_voice
+        }
         
-        db.add(chat_history)
-        db.commit()
-        db.refresh(chat_history)
+        history_response = supabase.table('chat_history').insert(history_data).execute()
         
-        # Atualizar ID da resposta com o ID real do histórico
-        chat_response.id = chat_history.id
-        chat_response.created_at = chat_history.created_at
+        if history_response.data:
+            # Atualizar ID da resposta com o ID real do histórico
+            chat_response.id = history_response.data[0]['id']
+            chat_response.created_at = history_response.data[0]['created_at']
         
     except Exception as e:
         logger.error(f"Erro ao salvar no histórico: {e}")
