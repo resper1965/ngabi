@@ -1,21 +1,16 @@
-# Usar uma imagem base que suporte múltiplos serviços
-FROM ubuntu:22.04
+# Usar uma imagem base mais simples
+FROM python:3.11-slim
 
 # Evitar prompts interativos durante a instalação
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Instalar dependências do sistema
 RUN apt-get update && apt-get install -y \
-    python3.11 \
-    python3.11-pip \
-    python3.11-dev \
     curl \
     wget \
     gnupg2 \
     lsb-release \
     software-properties-common \
-    nodejs \
-    npm \
     git \
     build-essential \
     libpq-dev \
@@ -23,10 +18,6 @@ RUN apt-get update && apt-get install -y \
     libreadline-dev \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
-
-# Configurar Python
-RUN ln -s /usr/bin/python3.11 /usr/bin/python
-RUN ln -s /usr/bin/pip3 /usr/bin/pip
 
 # Instalar PostgreSQL
 RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
@@ -62,16 +53,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código da aplicação
 COPY . .
 
-# Clonar Evolution API
-RUN git clone https://github.com/EvolutionAPI/evolution-api.git /app/evolution-api
-
-# Instalar dependências da Evolution API
-WORKDIR /app/evolution-api
-RUN npm install
-
-# Voltar para o diretório principal
-WORKDIR /app
-
 # Tornar o script de inicialização executável
 RUN chmod +x docker-entrypoint.sh
 
@@ -89,7 +70,7 @@ RUN mkdir -p /etc/redis && echo "daemonize yes" > /etc/redis/redis.conf
 RUN chown -R elasticsearch:elasticsearch /var/lib/elasticsearch
 
 # Expor portas
-EXPOSE 8000 8080 5432 6379 9200
+EXPOSE 8000 5432 6379 9200
 
 # Usar o script de inicialização
 ENTRYPOINT ["./docker-entrypoint.sh"] 

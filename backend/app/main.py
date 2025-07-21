@@ -15,7 +15,7 @@ from app.middleware.rate_limit_middleware import (
     LoggingMiddleware,
     MetricsMiddleware
 )
-from app.routers import chat, evolution
+from app.routers import chat
 
 # Configurar logging
 logging.basicConfig(
@@ -73,7 +73,6 @@ app.add_middleware(RateLimitMiddleware, rate_limit_config=rate_limit_config)
 # =============================================================================
 
 app.include_router(chat.router, prefix="/api/v1")
-app.include_router(evolution.router, prefix="/api/v1")
 
 # =============================================================================
 # ENDPOINTS BÁSICOS

@@ -7,7 +7,6 @@ Backend da aplicação n.Gabi com bancos integrados (PostgreSQL, Redis, Elastics
 Este backend inclui todos os serviços necessários em um único container:
 
 - **FastAPI** - API principal
-- **Evolution API** - WhatsApp Business API
 - **PostgreSQL** - Banco de dados principal
 - **Redis** - Cache e sessões
 - **Elasticsearch** - Busca e indexação
@@ -71,7 +70,6 @@ docker-compose up --build
 
 - **API**: http://localhost:8000
 - **Docs**: http://localhost:8000/docs
-- **Evolution API**: http://localhost:8080
 - **PostgreSQL**: localhost:5432
 - **Redis**: localhost:6379
 - **Elasticsearch**: http://localhost:9200
