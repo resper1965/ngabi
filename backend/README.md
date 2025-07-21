@@ -4,12 +4,11 @@ Backend da aplicação n.Gabi com bancos integrados (PostgreSQL, Redis, Elastics
 
 ## 🏗️ Arquitetura
 
-Este backend inclui todos os serviços necessários em um único container:
+Este backend inclui a aplicação FastAPI principal:
 
-- **FastAPI** - API principal
-- **PostgreSQL** - Banco de dados principal
-- **Redis** - Cache e sessões
-- **Elasticsearch** - Busca e indexação
+- **FastAPI** - API principal do n.Gabi
+- **Redis** - Cache e sessões (opcional)
+- **Bancos externos** - PostgreSQL e Elasticsearch como serviços separados
 
 ## 🚀 Deploy no Easypanel
 
@@ -30,15 +29,7 @@ Este backend inclui todos os serviços necessários em um único container:
 ### Variáveis de Ambiente
 
 ```env
-DATABASE_URL=postgresql://postgres:NgabiDB2024!Secure@localhost:5432/chat_agents
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=NgabiDB2024!Secure
-POSTGRES_DB=chat_agents
-REDIS_URL=redis://localhost:6379
-ELASTICSEARCH_URL=http://localhost:9200
-N8N_BASIC_AUTH_USER=admin
-N8N_BASIC_AUTH_PASSWORD=NgabiN8n2024!Admin
-WEBHOOK_URL=https://n8n.ngabi.ness.tec.br
+REDIS_URL=redis://redis:6379
 JWT_SECRET_KEY=NgabiJWT2024!SuperSecretKey123
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
@@ -70,9 +61,7 @@ docker-compose up --build
 
 - **API**: http://localhost:8000
 - **Docs**: http://localhost:8000/docs
-- **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
-- **Elasticsearch**: http://localhost:9200
+- **Health Check**: http://localhost:8000/health
 
 ## 📊 Health Checks
 
