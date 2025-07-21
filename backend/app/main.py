@@ -218,10 +218,47 @@ async def startup_event():
     """
     Evento executado na inicialização da aplicação.
     """
-    logger.info("🚀 Aplicação iniciada com sucesso!")
+    logger.info("🚀 n.Gabi Backend iniciando...")
     logger.info("📊 Rate limiting configurado")
     logger.info("🔧 Middleware de logging ativo")
     logger.info("📈 Métricas habilitadas")
+    
+    # Verificar conexão com PostgreSQL
+    try:
+        from app.database import engine
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        logger.info("✅ PostgreSQL conectado com sucesso")
+    except Exception as e:
+        logger.warning(f"⚠️ Erro ao conectar PostgreSQL: {e}")
+        logger.info("ℹ️ Verifique se o PostgreSQL está rodando")
+    
+    # Verificar conexão com Redis
+    try:
+        from app.core.cache import cache_health_check
+        health = cache_health_check()
+        if health.get("status") == "healthy":
+            logger.info("✅ Redis conectado com sucesso")
+        else:
+            logger.warning("⚠️ Redis não disponível, cache desabilitado")
+    except Exception as e:
+        logger.warning(f"⚠️ Erro ao conectar Redis: {e}")
+        logger.info("ℹ️ Aplicação funcionará sem cache")
+    
+    # Verificar conexão com Elasticsearch
+    try:
+        import requests
+        response = requests.get("http://localhost:9200/_cluster/health", timeout=5)
+        if response.status_code == 200:
+            logger.info("✅ Elasticsearch conectado com sucesso")
+        else:
+            logger.warning("⚠️ Elasticsearch não disponível")
+    except Exception as e:
+        logger.warning(f"⚠️ Erro ao conectar Elasticsearch: {e}")
+        logger.info("ℹ️ Funcionalidades de busca podem não funcionar")
+    
+    logger.info("🎉 n.Gabi Backend iniciado com sucesso!")
 
 @app.on_event("shutdown")
 async def shutdown_event():
