@@ -9,4 +9,15 @@ export default defineConfig({
       "@": "./src",
     },
   },
+  server: {
+    allowedHosts: [
+      'ngabi.ness.tec.br',
+      'api.ngabi.ness.tec.br',
+      'n8n.ngabi.ness.tec.br',
+      'localhost',
+      '127.0.0.1'
+    ],
+    host: '0.0.0.0',
+    port: 3000
+  }
 })
