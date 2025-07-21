@@ -2,6 +2,11 @@
 
 ## 📋 **SERVIÇOS NECESSÁRIOS (SIMPLIFICADO)**
 
+### **0. Supabase (já instalado na VPS)**
+- ✅ **Status**: Rodando no Easypanel
+- ✅ **Porta**: 8000 (Kong HTTP)
+- ✅ **URL interna**: `http://supabase:8000`
+
 ### **1. ngabi-redis (Redis)**
 - **Tipo**: Docker Image
 - **Imagem**: `redis:7-alpine`
@@ -17,7 +22,7 @@
 - **Porta**: `8000`
 - **Variáveis**:
   ```env
-  SUPABASE_URL=https://api.ngabi.ness.tec.br
+  SUPABASE_URL=http://supabase:8000
   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE
   REDIS_URL=redis://ngabi-redis:6379
   JWT_SECRET_KEY=NgabiJWT2024!SuperSecretKeyWithAtLeast32CharactersLong
