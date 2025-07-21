@@ -121,7 +121,8 @@ function DashboardLayout() {
 }
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Iniciar como autenticado para permitir acesso direto
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   const handleLogin = (email: string, password: string) => {
     // TODO: Implementar autenticação real
