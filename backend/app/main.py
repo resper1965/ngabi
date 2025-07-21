@@ -104,13 +104,17 @@ async def health_check():
         supabase.table('tenants').select('id').limit(1).execute()
         
         # Verificar Redis
-        cache_health = cache_health_check()
+        try:
+            cache_health = cache_health_check()
+            cache_status = cache_health.get("status", "unknown") if isinstance(cache_health, dict) else "unknown"
+        except:
+            cache_status = "unavailable"
         
         return {
             "status": "healthy",
             "database": "supabase",
             "auth": "supabase",
-            "cache": cache_health.get("status", "unknown"),
+            "cache": cache_status,
             "timestamp": "2024-07-21T18:38:34Z"
         }
     except Exception as e:
