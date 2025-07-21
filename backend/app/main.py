@@ -40,10 +40,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Adicionar middlewares customizados
+# Adicionar middlewares
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(MetricsMiddleware)
-app.add_middleware(RateLimitMiddleware)
+# app.add_middleware(RateLimitMiddleware)  # Comentado temporariamente
 
 # Configurar métricas Prometheus
 setup_prometheus_metrics(app)
