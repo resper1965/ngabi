@@ -14,7 +14,7 @@ from app.middleware.rate_limit_middleware import (
     LoggingMiddleware,
     MetricsMiddleware
 )
-from app.routers import chat
+from app.routers import chat, auth
 from app.database import get_supabase
 
 # Configurar logging
@@ -49,6 +49,7 @@ app.add_middleware(RateLimitMiddleware)
 setup_prometheus_metrics(app)
 
 # Incluir routers
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(chat.router, prefix="/api/v1")
 
 @app.on_event("startup")
@@ -90,7 +91,8 @@ async def root():
         "message": "n.Gabi API",
         "version": "2.0.0",
         "status": "running",
-        "database": "Supabase"
+        "database": "Supabase",
+        "auth": "Supabase Auth"
     }
 
 @app.get("/health")
@@ -107,6 +109,7 @@ async def health_check():
         return {
             "status": "healthy",
             "database": "connected",
+            "auth": "supabase",
             "cache": cache_health.get("status", "unknown"),
             "timestamp": "2024-07-21T18:38:34Z"
         }
