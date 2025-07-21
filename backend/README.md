@@ -29,7 +29,9 @@ Este backend inclui a aplicação FastAPI principal:
 ### Variáveis de Ambiente
 
 ```env
-REDIS_URL=redis://redis:6379
+DATABASE_URL=postgresql://postgres:NgabiDB2024!Secure@ngabi-postgres:5432/chat_agents
+REDIS_URL=redis://ngabi-redis:6379
+ELASTICSEARCH_URL=http://ngabi-elasticsearch:9200
 JWT_SECRET_KEY=NgabiJWT2024!SuperSecretKey123
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
