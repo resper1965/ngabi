@@ -70,7 +70,7 @@ async def startup_event():
         logger.warning(f"⚠️ Erro ao conectar Supabase: {e}")
         logger.info("ℹ️ Verifique se o Supabase está configurado")
     
-    # Verificar conexão com Redis
+    # Verificar conexão com Redis (opcional)
     try:
         from app.core.cache import cache_health_check
         health = cache_health_check()
@@ -108,7 +108,7 @@ async def health_check():
         
         return {
             "status": "healthy",
-            "database": "connected",
+            "database": "supabase",
             "auth": "supabase",
             "cache": cache_health.get("status", "unknown"),
             "timestamp": "2024-07-21T18:38:34Z"

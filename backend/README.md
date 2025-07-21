@@ -1,13 +1,13 @@
 # n.Gabi Backend
 
-Backend da aplicação n.Gabi com Supabase.
+Backend da aplicação n.Gabi com Supabase externo.
 
 ## 🏗️ Arquitetura
 
 Este backend inclui a aplicação FastAPI principal:
 
 - **FastAPI** - API principal do n.Gabi
-- **Supabase** - Banco de dados PostgreSQL + Auth + Real-time
+- **Supabase** - Banco de dados PostgreSQL + Auth + Real-time (externo)
 - **Redis** - Cache e sessões (opcional)
 
 ## 🚀 Deploy no Easypanel
@@ -29,13 +29,19 @@ Este backend inclui a aplicação FastAPI principal:
 ### Variáveis de Ambiente
 
 ```env
-SUPABASE_URL=https://your-project.supabase.co
+# Supabase Configuration (externo)
+SUPABASE_URL=https://sup.ngabi.ness.tec.br
 SUPABASE_ANON_KEY=your-anon-key
+
+# Redis Configuration (opcional)
 REDIS_URL=redis://ngabi-redis:6379
-JWT_SECRET_KEY=NgabiJWT2024!SuperSecretKey123
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-CORS_ORIGINS=https://ngabi.ness.tec.br,https://www.ngabi.ness.tec.br
+
+# CORS Configuration
+CORS_ORIGINS=https://ngabi.ness.tec.br,https://www.ngabi.ness.tec.br,https://chat.ngabi.ness.tec.br,https://api.ngabi.ness.tec.br,https://sup.ngabi.ness.tec.br
+
+# Application Configuration
+APP_NAME=n.Gabi Backend
+APP_VERSION=2.0.0
 ```
 
 ### Configuração de Domínio
@@ -84,17 +90,13 @@ docker logs <container_id>
 
 ### Problemas Comuns
 
-1. **PostgreSQL não inicia**
-   - Verificar permissões do diretório `/var/lib/postgresql/data`
-   - Verificar se a porta 5432 está livre
+1. **Supabase não conecta**
+   - Verificar se `SUPABASE_URL` e `SUPABASE_ANON_KEY` estão corretos
+   - Verificar se o Supabase está rodando
 
-2. **Redis não inicia**
+2. **Redis não conecta**
    - Verificar se a porta 6379 está livre
    - Verificar configuração do Redis
-
-3. **Elasticsearch não inicia**
-   - Verificar se há memória suficiente (mínimo 512MB)
-   - Verificar se a porta 9200 está livre
 
 ### Comandos Úteis
 
@@ -102,18 +104,23 @@ docker logs <container_id>
 # Verificar status dos serviços
 docker exec <container_id> ps aux
 
-# Conectar ao PostgreSQL
-docker exec -it <container_id> su - postgres -c "psql -d chat_agents"
-
 # Conectar ao Redis
 docker exec -it <container_id> redis-cli
 
-# Verificar Elasticsearch
-docker exec <container_id> curl http://localhost:9200/_cluster/health
+# Verificar Supabase
+curl https://sup.ngabi.ness.tec.br/rest/v1/
 ```
 
 ## 📝 Notas
 
-- Todos os dados são persistidos em volumes Docker
+- O backend usa Supabase externo (sem PostgreSQL interno)
+- Redis é opcional para cache
+- Todos os dados são gerenciados pelo Supabase
 - O container pode demorar alguns minutos para inicializar completamente
-- Os serviços são iniciados em sequência: PostgreSQL → Redis → Elasticsearch → FastAPI 
+
+## 🎯 Dependências
+
+- **Supabase**: Banco de dados, autenticação e real-time
+- **Redis**: Cache (opcional)
+- **FastAPI**: API framework
+- **Uvicorn**: ASGI server 
