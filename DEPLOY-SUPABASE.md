@@ -17,13 +17,13 @@
 - **Porta**: `8000`
 - **Variáveis**:
   ```env
-  SUPABASE_URL=http://localhost:8000
+  SUPABASE_URL=https://api.ngabi.ness.tec.br
   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE
   REDIS_URL=redis://ngabi-redis:6379
-  JWT_SECRET_KEY=your-super-secret-jwt-token-with-at-least-32-characters-long
+  JWT_SECRET_KEY=NgabiJWT2024!SuperSecretKeyWithAtLeast32CharactersLong
   JWT_ALGORITHM=HS256
   ACCESS_TOKEN_EXPIRE_MINUTES=30
-  CORS_ORIGINS=https://ngabi.ness.tec.br,https://www.ngabi.ness.tec.br
+  CORS_ORIGINS=https://ngabi.ness.tec.br,https://www.ngabi.ness.tec.br,https://api.ngabi.ness.tec.br
   ```
 
 ### **3. ngabi-frontend (React)**
@@ -36,6 +36,8 @@
 - **Variáveis**:
   ```env
   VITE_API_URL=https://api.ngabi.ness.tec.br
+  VITE_SUPABASE_URL=https://api.ngabi.ness.tec.br
+  VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE
   ```
 
 ### **4. ngabi-n8n (n8n)**
