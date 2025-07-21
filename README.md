@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🚀 Chat Agents Platform
 
 Plataforma de chat multi-agente com React frontend, FastAPI backend, n8n orchestration, Pinecone vectorization e Elasticsearch document store.
@@ -235,3 +236,6 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 ## 🆘 Suporte
 
 Para suporte, abra uma issue no GitHub ou entre em contato com a equipe de desenvolvimento. 
+=======
+# ngabi
+>>>>>>> 77a1ad97dd03ef83e2f9907741f9fe0d163ebce4
