@@ -89,13 +89,13 @@ function DashboardLayout() {
       currentPage={getCurrentPage()}
       onNavigate={handleNavigate}
       tenantLogo=""
-      orchestratorName="Agente Orquestrador"
+      orchestratorName="n.Gabi"
       userName="Admin"
     >
       <Routes>
         <Route path="/" element={
           <ChatPage
-            agentName="Agente de Suporte"
+            agentName="n.Gabi"
             onSendMessage={handleSendMessage}
             messages={messages}
             knowledgeBases={mockKnowledgeBases}
@@ -104,7 +104,7 @@ function DashboardLayout() {
         } />
         <Route path="/chat" element={
           <ChatPage
-            agentName="Agente de Suporte"
+            agentName="n.Gabi"
             onSendMessage={handleSendMessage}
             messages={messages}
             knowledgeBases={mockKnowledgeBases}
