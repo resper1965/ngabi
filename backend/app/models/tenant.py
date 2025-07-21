@@ -13,11 +13,12 @@ class Tenant(Base):
     subdomain = Column(Text, nullable=False, unique=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # Relacionamentos
-    users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
-    agents = relationship("Agent", back_populates="tenant", cascade="all, delete-orphan")
-    settings = relationship("TenantSettings", back_populates="tenant", uselist=False, cascade="all, delete-orphan")
-    chat_history = relationship("ChatHistory", back_populates="tenant", cascade="all, delete-orphan")
+                # Relacionamentos
+            users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
+            agents = relationship("Agent", back_populates="tenant", cascade="all, delete-orphan")
+            settings = relationship("TenantSettings", back_populates="tenant", uselist=False, cascade="all, delete-orphan")
+            chat_history = relationship("ChatHistory", back_populates="tenant", cascade="all, delete-orphan")
+            document_chunks = relationship("DocumentChunk", back_populates="tenant", cascade="all, delete-orphan")
     
     # Índices
     __table_args__ = (
