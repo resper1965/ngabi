@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 import logging
 
 from app.core.rate_limiting import setup_rate_limiting
+from app.core.cache import cache_health_check, get_cache_stats
 from app.middleware.rate_limit_middleware import (
     RateLimitMiddleware,
     LoggingMiddleware,
@@ -107,6 +108,23 @@ async def get_metrics(request: Request):
         return metrics_middleware.get_metrics()
     
     return {"message": "Métricas não disponíveis"}
+
+@app.get("/cache/health")
+async def get_cache_health():
+    """
+    Endpoint para verificar saúde do cache Redis.
+    """
+    return cache_health_check()
+
+@app.get("/cache/stats")
+async def get_cache_stats_endpoint(request: Request):
+    """
+    Endpoint para obter estatísticas do cache.
+    """
+    from app.core.rate_limiting import get_tenant_id_from_request
+    
+    tenant_id = get_tenant_id_from_request(request)
+    return get_cache_stats(tenant_id)
 
 # =============================================================================
 # HANDLERS DE ERRO

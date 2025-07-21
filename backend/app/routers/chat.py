@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import uuid
+import logging
+from datetime import datetime
 
 from app.database import get_db
 from app.core.rate_limiting import (
@@ -16,11 +18,20 @@ from app.core.rate_limiting import (
     get_tenant_id_from_request,
     get_rate_limit_stats
 )
+from app.core.cache import (
+    cache_response,
+    get_cached_response,
+    set_cached_response,
+    clear_tenant_cache,
+    get_cache_stats,
+    cache_health_check
+)
 from app.models import ChatHistory, Agent, User
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage
 from app.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # ENDPOINTS COM RATE LIMITING
@@ -28,16 +39,29 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 @router.post("/", response_model=ChatResponse)
 @chat_rate_limit  # 10 requisições por minuto por tenant
+@cache_response(ttl=3600)  # Cache por 1 hora
 async def send_chat_message(
     request: ChatRequest,
     http_request: Request,
     db: Session = Depends(get_db)
 ):
     """
-    Envia uma mensagem de chat.
+    Envia uma mensagem de chat com cache Redis.
     Rate limit: 10 requisições por minuto por tenant.
+    Cache: 1 hora por tenant + agent + query.
     """
     tenant_id = get_tenant_id_from_request(http_request)
+    
+    # Verificar cache primeiro
+    cached_response = get_cached_response(
+        tenant_id=tenant_id,
+        agent_id=str(request.agent_id),
+        query=request.message
+    )
+    
+    if cached_response:
+        logger.info(f"🎯 Cache hit para tenant {tenant_id}, agent {request.agent_id}")
+        return cached_response["response"]
     
     # Validar se o agente existe e pertence ao tenant
     agent_repo = BaseRepository(Agent, db, tenant_id)
@@ -49,32 +73,56 @@ async def send_chat_message(
     # Aqui você implementaria a lógica de chat
     # Por exemplo, chamar OpenAI, processar resposta, etc.
     
-    # Simular resposta
+    # Simular resposta (em produção, seria a resposta real do LLM)
     response_text = f"Resposta do agente {agent.name}: {request.message}"
     
-    # Salvar no histórico
-    chat_history = ChatHistory(
-        tenant_id=uuid.UUID(tenant_id),
-        user_id=request.user_id,
-        agent_id=request.agent_id,
-        message=request.message,
-        response=response_text,
-        chat_mode=request.chat_mode,
-        use_author_voice=request.use_author_voice
-    )
-    
-    db.add(chat_history)
-    db.commit()
-    db.refresh(chat_history)
-    
-    return ChatResponse(
-        id=chat_history.id,
+    # Criar resposta
+    chat_response = ChatResponse(
+        id=uuid.uuid4(),
         message=request.message,
         response=response_text,
         agent_name=agent.name,
         chat_mode=request.chat_mode,
-        created_at=chat_history.created_at
+        created_at=datetime.utcnow()
     )
+    
+    # Salvar no cache
+    cache_saved = set_cached_response(
+        tenant_id=tenant_id,
+        agent_id=str(request.agent_id),
+        query=request.message,
+        response=chat_response.dict(),
+        ttl=3600  # 1 hora
+    )
+    
+    if cache_saved:
+        logger.info(f"💾 Resposta cacheada para tenant {tenant_id}, agent {request.agent_id}")
+    
+    # Salvar no histórico (opcional - pode ser feito em background)
+    try:
+        chat_history = ChatHistory(
+            tenant_id=uuid.UUID(tenant_id),
+            user_id=request.user_id,
+            agent_id=request.agent_id,
+            message=request.message,
+            response=response_text,
+            chat_mode=request.chat_mode,
+            use_author_voice=request.use_author_voice
+        )
+        
+        db.add(chat_history)
+        db.commit()
+        db.refresh(chat_history)
+        
+        # Atualizar ID da resposta com o ID real do histórico
+        chat_response.id = chat_history.id
+        chat_response.created_at = chat_history.created_at
+        
+    except Exception as e:
+        logger.error(f"Erro ao salvar no histórico: {e}")
+        # Não falhar a requisição se o histórico falhar
+    
+    return chat_response
 
 @router.post("/stream")
 @rate_limit_by_tenant(5, "1 minute")  # 5 requisições por minuto por tenant
@@ -263,6 +311,74 @@ async def test_different_limits(http_request: Request):
         "tenant_id": tenant_id,
         "limit": "5/30 seconds"
     }
+
+# =============================================================================
+# ENDPOINTS DE CACHE
+# =============================================================================
+
+@router.get("/cache/stats")
+async def get_chat_cache_stats(http_request: Request):
+    """
+    Retorna estatísticas do cache de chat.
+    """
+    tenant_id = get_tenant_id_from_request(http_request)
+    
+    stats = get_cache_stats(tenant_id)
+    stats["endpoint"] = "/chat/cache/stats"
+    
+    return stats
+
+@router.get("/cache/health")
+async def get_cache_health():
+    """
+    Verifica saúde da conexão Redis.
+    """
+    health = cache_health_check()
+    return health
+
+@router.delete("/cache/clear")
+async def clear_chat_cache(http_request: Request):
+    """
+    Limpa cache de chat do tenant atual.
+    """
+    tenant_id = get_tenant_id_from_request(http_request)
+    
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant ID é obrigatório")
+    
+    deleted_keys = clear_tenant_cache(tenant_id)
+    
+    return {
+        "message": f"Cache limpo para tenant {tenant_id}",
+        "deleted_keys": deleted_keys,
+        "tenant_id": tenant_id
+    }
+
+@router.post("/cache/test")
+@cache_response(ttl=300)  # Cache por 5 minutos
+async def test_cache_functionality(
+    request: dict,
+    http_request: Request
+):
+    """
+    Endpoint para testar funcionalidade de cache.
+    """
+    tenant_id = get_tenant_id_from_request(http_request)
+    agent_id = request.get("agent_id", "test-agent")
+    message = request.get("message", "test message")
+    
+    # Simular processamento
+    response = {
+        "id": str(uuid.uuid4()),
+        "message": message,
+        "response": f"Resposta cacheada para: {message}",
+        "agent_id": agent_id,
+        "tenant_id": tenant_id,
+        "cached": True,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    return response
 
 # =============================================================================
 # ENDPOINTS DE ADMINISTRAÇÃO

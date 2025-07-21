@@ -22,4 +22,8 @@ factory-boy==3.3.0
 faker==20.1.0
 
 # Rate limiting
-slowapi==0.1.9 
+slowapi==0.1.9
+
+# Redis cache
+redis==5.0.1
+hiredis==2.3.2 
