@@ -7,6 +7,7 @@ import { TenantsPage } from './pages/TenantsPage'
 import { UsersPage } from './pages/UsersPage'
 import { BrandingPage } from './pages/BrandingPage'
 import { SettingsPage } from './pages/SettingsPage'
+import EvolutionPage from './pages/EvolutionPage'
 import './App.css'
 
 interface Message {
@@ -81,6 +82,7 @@ function DashboardLayout() {
     if (path === '/users') return 'users';
     if (path === '/branding') return 'branding';
     if (path === '/settings') return 'settings';
+    if (path === '/evolution') return 'evolution';
     return 'chat';
   };
 
@@ -115,6 +117,7 @@ function DashboardLayout() {
         <Route path="/users" element={<UsersPage />} />
         <Route path="/branding" element={<BrandingPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/evolution" element={<EvolutionPage />} />
       </Routes>
     </Dashboard>
   );

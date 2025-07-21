@@ -9,7 +9,8 @@ import {
   ChevronLeft, 
   ChevronRight,
   User,
-  Menu
+  Menu,
+  Smartphone
 } from 'lucide-react';
 
 /**
@@ -55,6 +56,12 @@ const sidebarItems: SidebarItem[] = [
     label: 'Chat',
     icon: <MessageSquare className="w-5 h-5" />,
     href: '/chat'
+  },
+  {
+    id: 'evolution',
+    label: 'WhatsApp',
+    icon: <Smartphone className="w-5 h-5" />,
+    href: '/evolution'
   },
   {
     id: 'tenants',
