@@ -3,13 +3,12 @@ Router para endpoints de chat com rate limiting aplicado.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
 from typing import List, Optional
 import uuid
 import logging
 from datetime import datetime
 
-from app.database import get_db
+from app.database import get_supabase
 from app.core.rate_limiting import (
     chat_rate_limit,
     rate_limit_by_tenant,
@@ -27,9 +26,7 @@ from app.core.cache import (
     cache_health_check
 )
 from app.core.metrics import record_chat_metric, metrics
-from app.models import ChatHistory, Agent, User
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage
-from app.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -43,8 +40,7 @@ logger = logging.getLogger(__name__)
 @cache_response(ttl=3600)  # Cache por 1 hora
 async def send_chat_message(
     request: ChatRequest,
-    http_request: Request,
-    db: Session = Depends(get_db)
+    http_request: Request
 ):
     """
     Envia uma mensagem de chat com cache Redis.
@@ -65,8 +61,9 @@ async def send_chat_message(
         return cached_response["response"]
     
     # Validar se o agente existe e pertence ao tenant
-    agent_repo = BaseRepository(Agent, db, tenant_id)
-    agent = agent_repo.get(request.agent_id)
+    supabase = get_supabase()
+    agent_response = supabase.table('agents').select('*').eq('id', str(request.agent_id)).eq('tenant_id', tenant_id).execute()
+    agent = agent_response.data[0] if agent_response.data else None
     
     if not agent:
         raise HTTPException(status_code=404, detail="Agente não encontrado")
@@ -75,14 +72,14 @@ async def send_chat_message(
     # Por exemplo, chamar OpenAI, processar resposta, etc.
     
     # Simular resposta (em produção, seria a resposta real do LLM)
-    response_text = f"Resposta do agente {agent.name}: {request.message}"
+            response_text = f"Resposta do agente {agent['name']}: {request.message}"
     
     # Criar resposta
     chat_response = ChatResponse(
         id=uuid.uuid4(),
         message=request.message,
         response=response_text,
-        agent_name=agent.name,
+        agent_name=agent['name'],
         chat_mode=request.chat_mode,
         created_at=datetime.utcnow()
     )
@@ -129,8 +126,7 @@ async def send_chat_message(
 @rate_limit_by_tenant(5, "1 minute")  # 5 requisições por minuto por tenant
 async def stream_chat_message(
     request: ChatRequest,
-    http_request: Request,
-    db: Session = Depends(get_db)
+    http_request: Request
 ):
     """
     Stream de chat (para respostas longas).
@@ -146,8 +142,7 @@ async def stream_chat_message(
 @rate_limit_by_tenant(2, "1 minute")  # 2 requisições por minuto por tenant
 async def batch_chat_messages(
     requests: List[ChatRequest],
-    http_request: Request,
-    db: Session = Depends(get_db)
+    http_request: Request
 ):
     """
     Processa múltiplas mensagens de chat em lote.
@@ -181,8 +176,7 @@ async def batch_chat_messages(
 @rate_limit_by_user(20, "1 minute")  # 20 requisições por minuto por usuário
 async def user_chat_message(
     request: ChatRequest,
-    http_request: Request,
-    db: Session = Depends(get_db)
+    http_request: Request
 ):
     """
     Chat específico por usuário.
@@ -211,8 +205,7 @@ async def user_chat_message(
 @router.post("/role-based-chat")
 async def role_based_chat(
     request: ChatRequest,
-    http_request: Request,
-    db: Session = Depends(get_db)
+    http_request: Request
 ):
     """
     Chat com rate limiting baseado no papel do usuário.
@@ -253,8 +246,7 @@ async def get_chat_rate_limit_stats(http_request: Request):
 async def get_chat_history(
     limit: int = 10,
     offset: int = 0,
-    http_request: Request = None,
-    db: Session = Depends(get_db)
+    http_request: Request = None
 ):
     """
     Retorna histórico de chat.
