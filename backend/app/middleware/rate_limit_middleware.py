@@ -90,9 +90,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 f"Tempo: {process_time:.3f}s"
             )
             
-            # Adicionar headers de rate limiting
-            response.headers["X-Rate-Limit-Tenant"] = tenant_id
-            response.headers["X-Process-Time"] = str(process_time)
+            # Adicionar headers de rate limiting (apenas se response for válido)
+            if hasattr(response, 'headers'):
+                response.headers["X-Rate-Limit-Tenant"] = tenant_id
+                response.headers["X-Process-Time"] = str(process_time)
             
             # Atualizar métricas
             self._update_metrics(tenant_id, path, response.status_code, process_time)

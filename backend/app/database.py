@@ -177,14 +177,16 @@ async def check_database_health() -> Dict[str, Any]:
     try:
         supabase = get_supabase()
         
-        # Teste simples de conexão
-        response = supabase.table('agents').select('count', count='exact').limit(1).execute()
+        # Teste simples de conexão (sem verificar tabelas)
+        # Apenas verifica se consegue conectar ao Supabase
+        response = supabase.auth.get_user()
         
         return {
-            "status": "healthy",
+            "status": "connected",
             "provider": "supabase",
             "url": settings.supabase_url,
             "connected": True,
+            "tables_ready": False,  # Tabelas precisam ser criadas manualmente
             "timestamp": "now()"
         }
     except Exception as e:
