@@ -1,0 +1,57 @@
+# Docker Compose com Port Forwarding
+# n.Gabi - Chat Multi-Agente
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # FRONTEND - Porta 80 → 3000
+  # =============================================================================
+  frontend:
+    build: ./frontend
+    container_name: ngabi-frontend
+    ports:
+      - "80:3000"  # Porta externa 80 → Porta interna 3000
+    environment:
+      - VITE_API_URL=http://localhost:443  # Backend na porta 443
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - ngabi-network
+
+  # =============================================================================
+  # BACKEND - Porta 443 → 8000
+  # =============================================================================
+  backend:
+    build: ./backend
+    container_name: ngabi-backend
+    ports:
+      - "443:8000"  # Porta externa 443 → Porta interna 8000
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - REDIS_URL=redis://ngabi-redis:6379
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+    networks:
+      - ngabi-network
+
+  # =============================================================================
+  # REDIS - Porta 6379 → 6379 (padrão)
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: ngabi-redis
+    ports:
+      - "6379:6379"  # Porta externa 6379 → Porta interna 6379
+    networks:
+      - ngabi-network
+
+networks:
+  ngabi-network:
+    driver: bridge 

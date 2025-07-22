@@ -22,7 +22,7 @@ services:
       - backend
     restart: unless-stopped
     networks:
-      - ngabi-network
+      - ngabi-gosu-network
 
   backend:
     build:
@@ -47,7 +47,7 @@ services:
       - redis
     restart: unless-stopped
     networks:
-      - ngabi-network
+      - ngabi-gosu-network
 
   redis:
     image: redis:7-alpine
@@ -59,15 +59,15 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD:-} --maxmemory 256mb --maxmemory-policy allkeys-lru --protected-mode yes --bind 0.0.0.0
     restart: unless-stopped
     networks:
-      - ngabi-network
+      - ngabi-gosu-network
 
 volumes:
   redis_data:
     driver: local
 
 networks:
-  ngabi-network:
+  ngabi-gosu-network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16 
+        - subnet: 172.25.0.0/16 

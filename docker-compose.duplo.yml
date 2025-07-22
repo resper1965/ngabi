@@ -1,0 +1,124 @@
+# Docker Compose com Duplo Backend e Frontend
+# n.Gabi - Chat Multi-Agente
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # FRONTEND 1 (Porta 3000)
+  # =============================================================================
+  frontend1:
+    build: ./frontend
+    container_name: ngabi-frontend-1
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_SUPABASE_URL=${SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend1
+    restart: unless-stopped
+    networks:
+      - ngabi-network
+
+  # =============================================================================
+  # FRONTEND 2 (Porta 3001)
+  # =============================================================================
+  frontend2:
+    build: ./frontend
+    container_name: ngabi-frontend-2
+    ports:
+      - "3001:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8001
+      - VITE_SUPABASE_URL=${SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend2
+    restart: unless-stopped
+    networks:
+      - ngabi-network
+
+  # =============================================================================
+  # BACKEND 1 (Porta 8000)
+  # =============================================================================
+  backend1:
+    build: ./backend
+    container_name: ngabi-backend-1
+    ports:
+      - "8000:8000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REDIS_URL=redis://ngabi-redis:6379
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CACHE_ENABLED=true
+      - CACHE_TTL=3600
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_REQUESTS=100
+      - RATE_LIMIT_WINDOW=60
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - ngabi-network
+
+  # =============================================================================
+  # BACKEND 2 (Porta 8001)
+  # =============================================================================
+  backend2:
+    build: ./backend
+    container_name: ngabi-backend-2
+    ports:
+      - "8001:8000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REDIS_URL=redis://ngabi-redis:6379
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CACHE_ENABLED=true
+      - CACHE_TTL=3600
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_REQUESTS=100
+      - RATE_LIMIT_WINDOW=60
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - ngabi-network
+
+  # =============================================================================
+  # REDIS (Compartilhado)
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: ngabi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD:-} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - ngabi-network
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  ngabi-network:
+    driver: bridge 
