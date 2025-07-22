@@ -36,27 +36,31 @@ export interface ChatResponse {
   timestamp: string;
 }
 
-export function fetchTenants(): Promise<Tenant[]> {
+export async function fetchTenants(): Promise<Tenant[]> {
   // TODO: GET /tenants
-  return axios.get<Tenant[]>('/tenants').then(res => res.data);
+  const response = await axios.get<Tenant[]>('/tenants');
+  return response.data;
 }
 
-export function fetchUsers(): Promise<User[]> {
+export async function fetchUsers(): Promise<User[]> {
   // TODO: GET /users
-  return axios.get<User[]>('/users').then(res => res.data);
+  const response = await axios.get<User[]>('/users');
+  return response.data;
 }
 
-export function fetchSettings(tenantId: string): Promise<Settings> {
+export async function fetchSettings(tenantId: string): Promise<Settings> {
   // TODO: GET /settings?tenant_id=
-  return axios.get<Settings>(`/settings?tenant_id=${tenantId}`).then(res => res.data);
+  const response = await axios.get<Settings>(`/settings?tenant_id=${tenantId}`);
+  return response.data;
 }
 
-export function updateSettings(data: Settings): Promise<void> {
+export async function updateSettings(data: Settings): Promise<void> {
   // TODO: PUT /settings
-  return axios.put('/settings', data).then(() => {});
+  await axios.put('/settings', data);
 }
 
-export function sendChat(req: ChatRequest): Promise<ChatResponse> {
+export async function sendChat(req: ChatRequest): Promise<ChatResponse> {
   // TODO: POST /chat
-  return axios.post<ChatResponse>('/chat', req).then(res => res.data);
+  const response = await axios.post<ChatResponse>('/chat', req);
+  return response.data;
 } 

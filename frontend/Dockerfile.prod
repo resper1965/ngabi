@@ -1,0 +1,43 @@
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copiar package files
+COPY package*.json ./
+
+# Instalar todas as dependências
+RUN npm ci && npm cache clean --force
+
+# Copiar código da aplicação
+COPY . .
+
+# Fazer build da aplicação
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+# Instalar serve para servir arquivos estáticos
+RUN npm install -g serve
+
+# Copiar arquivos buildados
+COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+
+# Mudar para usuário não-root
+USER nextjs
+
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+# Comando para servir arquivos estáticos
+CMD ["serve", "-s", "dist", "-l", "3000"] 

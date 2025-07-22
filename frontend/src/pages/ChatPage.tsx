@@ -1,10 +1,10 @@
-import React from 'react';
+import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Bot, User, Settings, Database } from 'lucide-react';
+import { Send, Bot, User, Database } from 'lucide-react';
 
 export function ChatPage() {
   // TODO: carregar agentes via fetchAgents()

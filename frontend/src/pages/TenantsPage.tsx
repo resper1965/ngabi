@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Edit, Trash2, Search, Building2 } from 'lucide-react';
-import { fetchTenants, Tenant } from '@/services/api';
+import { fetchTenants, type Tenant } from '@/services/api';
 
 /**
  * WIREFRAME TEXTUAL:
