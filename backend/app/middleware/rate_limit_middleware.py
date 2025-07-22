@@ -198,27 +198,31 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """
         Atualiza métricas de requisições.
         """
-        # Implementação básica - pode ser expandida com Prometheus, etc.
-        metric_key = f"{tenant_id}:{path}"
-        
-        if metric_key not in self.request_counts:
-            self.request_counts[metric_key] = {
-                "total_requests": 0,
-                "successful_requests": 0,
-                "failed_requests": 0,
-                "total_time": 0.0,
-                "avg_time": 0.0
-            }
-        
-        metrics = self.request_counts[metric_key]
-        metrics["total_requests"] += 1
-        metrics["total_time"] += process_time
-        metrics["avg_time"] = metrics["total_time"] / metrics["total_requests"]
-        
-        if 200 <= status_code < 400:
-            metrics["successful_requests"] += 1
-        else:
-            metrics["failed_requests"] += 1
+        try:
+            # Implementação básica - pode ser expandida com Prometheus, etc.
+            metric_key = f"{tenant_id}:{path}"
+            
+            if metric_key not in self.request_counts:
+                self.request_counts[metric_key] = {
+                    "total_requests": 0,
+                    "successful_requests": 0,
+                    "failed_requests": 0,
+                    "total_time": 0.0,
+                    "avg_time": 0.0
+                }
+            
+            metrics = self.request_counts[metric_key]
+            metrics["total_requests"] += 1
+            metrics["total_time"] += process_time
+            metrics["avg_time"] = metrics["total_time"] / metrics["total_requests"]
+            
+            if 200 <= status_code < 400:
+                metrics["successful_requests"] += 1
+            else:
+                metrics["failed_requests"] += 1
+        except Exception as e:
+            logger.error(f"Erro ao atualizar métricas: {e}")
+            # Não falhar a requisição por erro nas métricas
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     """
