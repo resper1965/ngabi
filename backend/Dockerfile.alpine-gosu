@@ -1,0 +1,106 @@
+# Dockerfile ultra-seguro para Python 3.13 com gosu
+# n.Gabi - Chat Multi-Agente (Versão Hardened + gosu)
+
+# Usar Alpine 3.22 (mais recente e seguro)
+FROM alpine:3.22
+
+# Instalar Python 3.13, dependências e gosu
+RUN apk add --no-cache \
+    python3 \
+    python3-dev \
+    py3-pip \
+    gcc \
+    musl-dev \
+    postgresql-dev \
+    curl \
+    gnupg \
+    && rm -rf /var/cache/apk/*
+
+# Instalar gosu para execução segura como usuário não-root
+RUN set -eux; \
+    apk add --no-cache --virtual .gosu-fetch gnupg; \
+    arch="$(apk --print-arch)"; \
+    case "$arch" in \
+        'x86_64') \
+            url='https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64'; \
+            sha256='bbc4136d03ab138b1ad66fa4fc051bafc6cc7ffae632b069a53657279a450de3' \
+            ;; \
+        'aarch64') \
+            url='https://github.com/tianon/gosu/releases/download/1.17/gosu-arm64'; \
+            sha256='c3805a85d17f4454c23d7059bcb97e1ec1af272b90126e79ed002342de08389b' \
+            ;; \
+        'armhf') \
+            url='https://github.com/tianon/gosu/releases/download/1.17/gosu-armhf'; \
+            sha256='e5866286277ff2a2159fb9196fea13e0a59d3f1091ea46ddb985160b94b6841b' \
+            ;; \
+        'x86') \
+            url='https://github.com/tianon/gosu/releases/download/1.17/gosu-i386'; \
+            sha256='087dbb8fe479537e64f9c86fa49ff3b41dee1cbd28739a19aaef83dc8186b1ca' \
+            ;; \
+        'ppc64le') \
+            url='https://github.com/tianon/gosu/releases/download/1.17/gosu-ppc64el'; \
+            sha256='1891acdcfa70046818ab6ed3c52b9d42fa10fbb7b340eb429c8c7849691dbd76' \
+            ;; \
+        'riscv64') \
+            url='https://github.com/tianon/gosu/releases/download/1.17/gosu-riscv64'; \
+            sha256='38a6444b57adce135c42d5a3689f616fc7803ddc7a07ff6f946f2ebc67a26ba6' \
+            ;; \
+        's390x') \
+            url='https://github.com/tianon/gosu/releases/download/1.17/gosu-s390x'; \
+            sha256='69873bab588192f760547ca1f75b27cfcf106e9f7403fee6fd0600bc914979d0' \
+            ;; \
+        'armv7') \
+            url='https://github.com/tianon/gosu/releases/download/1.17/gosu-armhf'; \
+            sha256='e5866286277ff2a2159fb9196fea13e0a59d3f1091ea46ddb985160b94b6841b' \
+            ;; \
+        *) \
+            echo >&2 "error: unsupported gosu architecture: '$arch'"; \
+            exit 1 \
+            ;; \
+    esac; \
+    wget -O /usr/local/bin/gosu.asc "$url.asc"; \
+    wget -O /usr/local/bin/gosu "$url"; \
+    echo "$sha256 */usr/local/bin/gosu" | sha256sum -c -; \
+    export GNUPGHOME="$(mktemp -d)"; \
+    gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4; \
+    gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu; \
+    gpgconf --kill all; \
+    rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc; \
+    apk del --no-network .gosu-fetch; \
+    chmod +x /usr/local/bin/gosu; \
+    gosu --version; \
+    gosu nobody true
+
+# Criar usuário não-root para segurança
+RUN adduser -D -s /bin/sh appuser
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Definir variáveis de ambiente para segurança
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONHASHSEED=random
+ENV PYTHONPATH=/app
+
+# Copiar requirements e instalar dependências Python
+COPY requirements-python313.txt requirements.txt
+RUN pip3 install --no-cache-dir --upgrade pip --break-system-packages && \
+    pip3 install --no-cache-dir -r requirements.txt --break-system-packages && \
+    rm -rf /root/.cache/pip
+
+# Copiar código da aplicação
+COPY . .
+
+# Mudar propriedade para usuário não-root
+RUN chown -R appuser:appuser /app
+
+# Expor porta
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Comando para iniciar a aplicação usando gosu
+CMD ["gosu", "appuser", "python3", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"] 
