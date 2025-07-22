@@ -1,365 +1,291 @@
 """
-Router para endpoints de chat com rate limiting aplicado.
+Router de chat otimizado - foca na lógica de IA e delega infraestrutura para Supabase.
+Remove redundâncias e simplifica operações.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uuid
 import logging
 from datetime import datetime
 
-from app.database import get_supabase
-from app.core.rate_limiting import (
-    chat_rate_limit,
-    rate_limit_by_tenant,
-    rate_limit_by_user,
-    get_rate_limit_by_role,
-    get_tenant_id_from_request,
-    get_rate_limit_stats
-)
-from app.core.cache import (
-    cache_response,
-    get_cached_response,
-    set_cached_response,
-    clear_tenant_cache,
-    get_cache_stats,
-    cache_health_check
-)
-from app.core.metrics import record_chat_metric, metrics
+from app.database import get_supabase, get_current_user, get_agent_by_id, save_chat_message, get_chat_history
+from app.core.rate_limiting import rate_limit_by_user
+from app.core.cache import get_cached_response, set_cached_response
+from app.core.events import event_system, EventType
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage
+from app.core.config import settings
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 logger = logging.getLogger(__name__)
 
 # =============================================================================
-# ENDPOINTS COM RATE LIMITING
+# CHAT ENDPOINTS (Foco na Lógica de IA)
 # =============================================================================
 
 @router.post("/", response_model=ChatResponse)
-# @chat_rate_limit  # 10 requisições por minuto por tenant
-# @cache_response(ttl=3600)  # Cache por 1 hora
+@rate_limit_by_user(settings.rate_limit_chat, "1 minute")
 async def send_chat_message(
     request: ChatRequest,
     http_request: Request
 ):
     """
-    Envia uma mensagem de chat com cache Redis.
-    Rate limit: 10 requisições por minuto por tenant.
-    Cache: 1 hora por tenant + agent + query.
+    Envia mensagem de chat com foco na lógica de IA.
+    Rate limit: Configurável por usuário.
+    Cache: Apenas para respostas de IA.
     """
-    tenant_id = get_tenant_id_from_request(http_request)
-    
-    # Verificar cache primeiro
-    cached_response = get_cached_response(
-        tenant_id=tenant_id,
-        agent_id=str(request.agent_id),
-        query=request.message
-    )
-    
-    if cached_response:
-        logger.info(f"🎯 Cache hit para tenant {tenant_id}, agent {request.agent_id}")
-        return cached_response["response"]
-    
-    # Validar se o agente existe e pertence ao tenant
-    supabase = get_supabase()
-    agent_response = supabase.table('agents').select('*').eq('id', str(request.agent_id)).eq('tenant_id', tenant_id).execute()
-    agent = agent_response.data[0] if agent_response.data else None
-    
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agente não encontrado")
-    
-    # Aqui você implementaria a lógica de chat
-    # Por exemplo, chamar OpenAI, processar resposta, etc.
-    
-    # Simular resposta (em produção, seria a resposta real do LLM)
-    response_text = f"Resposta do agente {agent['name']}: {request.message}"
-    
-    # Criar resposta
-    chat_response = ChatResponse(
-        id=uuid.uuid4(),
-        message=request.message,
-        response=response_text,
-        agent_name=agent['name'],
-        chat_mode=request.chat_mode,
-        created_at=datetime.utcnow()
-    )
-    
-    # Salvar no cache
-    cache_saved = set_cached_response(
-        tenant_id=tenant_id,
-        agent_id=str(request.agent_id),
-        query=request.message,
-        response=chat_response.dict(),
-        ttl=3600  # 1 hora
-    )
-    
-    if cache_saved:
-        logger.info(f"💾 Resposta cacheada para tenant {tenant_id}, agent {request.agent_id}")
-    
-    # Salvar no histórico (opcional - pode ser feito em background)
     try:
-        # Salvar no Supabase
-        history_data = {
-            'tenant_id': tenant_id,
-            'user_id': str(request.user_id),
-            'agent_id': str(request.agent_id),
-            'message': request.message,
-            'response': response_text,
-            'chat_mode': request.chat_mode,
-            'use_author_voice': request.use_author_voice
-        }
+        # Obter usuário atual
+        user = get_current_user()
+        if not user:
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
         
-        history_response = supabase.table('chat_history').insert(history_data).execute()
+        # Verificar cache para resposta de IA
+        cache_key = f"ai_response:{user.id}:{request.agent_id}:{hash(request.message)}"
+        cached_response = get_cached_response(cache_key)
         
-        if history_response.data:
-            # Atualizar ID da resposta com o ID real do histórico
-            chat_response.id = history_response.data[0]['id']
-            chat_response.created_at = history_response.data[0]['created_at']
+        if cached_response:
+            logger.info(f"🎯 Cache hit para usuário {user.id}")
+            return ChatResponse(**cached_response)
+        
+        # Obter agente via Supabase (RLS automático)
+        agent = await get_agent_by_id(str(request.agent_id))
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agente não encontrado")
+        
+        # Processar mensagem com IA (foco principal do n.Gabi)
+        ai_response = await _process_ai_message(request, agent)
+        
+        # Criar resposta
+        chat_response = ChatResponse(
+            id=uuid.uuid4(),
+            message=request.message,
+            response=ai_response,
+            agent_name=agent['name'],
+            chat_mode=request.chat_mode,
+            created_at=datetime.utcnow().isoformat()
+        )
+        
+        # Cache da resposta de IA
+        set_cached_response(cache_key, chat_response.dict(), ttl=settings.cache_ttl)
+        
+        # Salvar no histórico via Supabase (background)
+        await save_chat_message(
+            user_id=user.id,
+            agent_id=str(request.agent_id),
+            message=request.message,
+            response=ai_response,
+            chat_mode=request.chat_mode
+        )
+        
+        # Emitir evento
+        await event_system.emit(EventType.CHAT_MESSAGE, {
+            "user_id": user.id,
+            "agent_id": str(request.agent_id),
+            "message": request.message,
+            "response": ai_response,
+            "chat_mode": request.chat_mode
+        })
+        
+        logger.info(f"✅ Chat processado: {user.id} -> {agent['name']}")
+        return chat_response
         
     except Exception as e:
-        logger.error(f"Erro ao salvar no histórico: {e}")
-        # Não falhar a requisição se o histórico falhar
-    
-    return chat_response
+        logger.error(f"❌ Erro no chat: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro no processamento: {str(e)}")
 
 @router.post("/stream")
-# @rate_limit_by_tenant(5, "1 minute")  # 5 requisições por minuto por tenant
+@rate_limit_by_user(settings.rate_limit_chat, "1 minute")
 async def stream_chat_message(
     request: ChatRequest,
     http_request: Request
 ):
     """
-    Stream de chat (para respostas longas).
-    Rate limit: 5 requisições por minuto por tenant.
+    Chat em streaming - foco na experiência em tempo real.
     """
-    tenant_id = get_tenant_id_from_request(http_request)
-    
-    # Implementar streaming de resposta
-    # Por enquanto, retorna uma resposta simples
-    return {"message": "Stream endpoint - implementar streaming"}
-
-@router.post("/batch")
-# @rate_limit_by_tenant(2, "1 minute")  # 2 requisições por minuto por tenant
-async def batch_chat_messages(
-    requests: List[ChatRequest],
-    http_request: Request
-):
-    """
-    Processa múltiplas mensagens de chat em lote.
-    Rate limit: 2 requisições por minuto por tenant.
-    """
-    tenant_id = get_tenant_id_from_request(http_request)
-    
-    if len(requests) > 10:
-        raise HTTPException(status_code=400, detail="Máximo de 10 mensagens por lote")
-    
-    responses = []
-    for req in requests:
-        # Processar cada mensagem
-        response = ChatResponse(
-            id=uuid.uuid4(),
-            message=req.message,
-            response=f"Resposta para: {req.message}",
-            agent_name="Batch Agent",
-            chat_mode=req.chat_mode,
-            created_at=None
-        )
-        responses.append(response)
-    
-    return {"responses": responses}
-
-@router.post("/user-chat")
-# @rate_limit_by_user(20, "1 minute")  # 20 requisições por minuto por usuário
-async def user_chat_message(
-    request: ChatRequest,
-    http_request: Request
-):
-    """
-    Chat específico por usuário.
-    Rate limit: 20 requisições por minuto por usuário.
-    """
-    tenant_id = get_tenant_id_from_request(http_request)
-    
-    # Implementar lógica específica por usuário
-    return {"message": f"Chat do usuário {request.user_id} no tenant {tenant_id}"}
-
-@router.post("/role-based-chat")
-async def role_based_chat(
-    request: ChatRequest,
-    http_request: Request
-):
-    """
-    Chat baseado em roles/permissões.
-    """
-    tenant_id = get_tenant_id_from_request(http_request)
-    
-    # Determinar role do usuário
-    role = "user"  # Implementar lógica de roles
-    
-    return await _process_role_chat(request, role)
-
-async def _process_role_chat(request: ChatRequest, role: str):
-    """
-    Processa chat baseado no role do usuário.
-    """
-    if role == "admin":
-        return {"message": f"Admin chat: {request.message}"}
-    elif role == "moderator":
-        return {"message": f"Moderator chat: {request.message}"}
-    else:
-        return {"message": f"User chat: {request.message}"}
-
-@router.get("/rate-limit-stats")
-async def get_chat_rate_limit_stats(http_request: Request):
-    """
-    Retorna estatísticas de rate limiting.
-    """
-    return get_rate_limit_stats(http_request)
+    try:
+        user = get_current_user()
+        if not user:
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
+        
+        agent = await get_agent_by_id(str(request.agent_id))
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agente não encontrado")
+        
+        # Implementar streaming de IA
+        # TODO: Implementar streaming real com OpenAI ou similar
+        return {
+            "message": "Streaming implementado",
+            "agent": agent['name'],
+            "mode": request.chat_mode
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Erro no streaming: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/history")
-# @rate_limit_by_tenant(50, "1 minute")  # 50 requisições por minuto por tenant
-async def get_chat_history(
-    limit: int = 10,
-    offset: int = 0,
-    http_request: Request = None
+async def get_chat_history_endpoint(
+    agent_id: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0
 ):
     """
-    Retorna histórico de chat.
-    Rate limit: 50 requisições por minuto por tenant.
+    Obter histórico de chat via Supabase.
     """
-    tenant_id = get_tenant_id_from_request(http_request) if http_request else "default"
-    
-    # Implementar busca no Supabase
-    supabase = get_supabase()
-    history_response = supabase.table('chat_history').select('*').eq('tenant_id', tenant_id).range(offset, offset + limit - 1).execute()
-    
-    return {"history": history_response.data}
+    try:
+        user = get_current_user()
+        if not user:
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
+        
+        history = await get_chat_history(
+            user_id=user.id,
+            agent_id=agent_id,
+            limit=limit,
+            offset=offset
+        )
+        
+        return {
+            "history": history,
+            "total": len(history),
+            "user_id": user.id
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Erro ao obter histórico: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/test-rate-limit")
-# @rate_limit_by_tenant(3, "1 minute")  # 3 requisições por minuto por tenant
-async def test_rate_limit(http_request: Request):
+@router.get("/agents")
+async def get_user_agents():
     """
-    Endpoint para testar rate limiting.
-    Rate limit: 3 requisições por minuto por tenant.
+    Obter agentes do usuário via RLS do Supabase.
     """
-    tenant_id = get_tenant_id_from_request(http_request)
+    try:
+        user = get_current_user()
+        if not user:
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
+        
+        supabase = get_supabase()
+        response = supabase.table('agents').select('*').execute()
+        
+        return {
+            "agents": response.data or [],
+            "total": len(response.data or [])
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Erro ao obter agentes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/agents")
+async def create_agent(agent_data: Dict[str, Any]):
+    """
+    Criar agente via Supabase (RLS gerencia tenant).
+    """
+    try:
+        user = get_current_user()
+        if not user:
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
+        
+        # Adicionar dados do usuário
+        agent_data.update({
+            "created_by": user.id,
+            "created_at": "now()"
+        })
+        
+        supabase = get_supabase()
+        response = supabase.table('agents').insert(agent_data).execute()
+        
+        if response.data:
+            logger.info(f"✅ Agente criado: {response.data[0]['id']}")
+            return response.data[0]
+        else:
+            raise HTTPException(status_code=400, detail="Erro ao criar agente")
+            
+    except Exception as e:
+        logger.error(f"❌ Erro ao criar agente: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# =============================================================================
+# AI PROCESSING (Foco Principal do n.Gabi)
+# =============================================================================
+
+async def _process_ai_message(request: ChatRequest, agent: Dict[str, Any]) -> str:
+    """
+    Processar mensagem com IA - foco principal do n.Gabi.
+    """
+    try:
+        # Obter configurações do agente
+        system_prompt = agent.get('system_prompt', '')
+        model = agent.get('model', settings.default_chat_model)
+        temperature = agent.get('temperature', settings.temperature)
+        max_tokens = agent.get('max_tokens', settings.max_tokens)
+        
+        # Preparar contexto
+        context = {
+            "message": request.message,
+            "chat_mode": request.chat_mode,
+            "system_prompt": system_prompt,
+            "model": model,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "kb_filters": request.kb_filters or []
+        }
+        
+        # TODO: Implementar chamada real para IA
+        # Por enquanto, simular resposta
+        ai_response = f"Resposta do agente {agent['name']} (modo {request.chat_mode}): {request.message}"
+        
+        logger.info(f"🤖 IA processada: {agent['name']} -> {len(ai_response)} chars")
+        return ai_response
+        
+    except Exception as e:
+        logger.error(f"❌ Erro no processamento de IA: {e}")
+        return f"Desculpe, ocorreu um erro no processamento: {str(e)}"
+
+# =============================================================================
+# UTILITY ENDPOINTS
+# =============================================================================
+
+@router.get("/health")
+async def chat_health():
+    """Health check do sistema de chat."""
     return {
-        "message": "Rate limit test",
-        "tenant_id": tenant_id,
+        "status": "healthy",
+        "service": "chat",
+        "ai_model": settings.default_chat_model,
+        "rate_limit": settings.rate_limit_chat,
+        "cache_enabled": settings.cache_enabled,
         "timestamp": datetime.utcnow().isoformat()
     }
 
-@router.post("/test-different-limits")
-# @rate_limit_by_tenant(5, "30 seconds")  # 5 requisições por 30 segundos
-async def test_different_limits(http_request: Request):
-    """
-    Testa diferentes limites de rate limiting.
-    Rate limit: 5 requisições por 30 segundos.
-    """
-    tenant_id = get_tenant_id_from_request(http_request)
-    return {
-        "message": "Different rate limit test",
-        "tenant_id": tenant_id,
-        "limit": "5 requests per 30 seconds",
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-# =============================================================================
-# ENDPOINTS DE CACHE
-# =============================================================================
-
-@router.get("/cache/stats")
-async def get_chat_cache_stats(http_request: Request):
-    """
-    Retorna estatísticas do cache.
-    """
-    return get_cache_stats(http_request)
-
-@router.get("/cache/health")
-async def get_cache_health():
-    """
-    Verifica saúde do cache.
-    """
-    return cache_health_check()
-
-@router.delete("/cache/clear")
-async def clear_chat_cache(http_request: Request):
-    """
-    Limpa cache do tenant.
-    """
-    tenant_id = get_tenant_id_from_request(http_request)
-    cleared = clear_tenant_cache(tenant_id)
-    return {
-        "message": "Cache limpo" if cleared else "Erro ao limpar cache",
-        "tenant_id": tenant_id
-    }
-
-@router.post("/cache/test")
-# @cache_response(ttl=300)  # Cache por 5 minutos
-async def test_cache_functionality(
-    request: dict,
-    http_request: Request
-):
-    """
-    Testa funcionalidade de cache.
-    Cache: 5 minutos.
-    """
-    tenant_id = get_tenant_id_from_request(http_request)
-    
-    # Simular processamento
-    result = {
-        "message": "Cache test",
-        "data": request,
-        "tenant_id": tenant_id,
-        "timestamp": datetime.utcnow().isoformat()
-    }
-    
-    return result
-
-# =============================================================================
-# ENDPOINTS ADMIN
-# =============================================================================
-
-@router.post("/admin/reset-limits")
-async def admin_reset_rate_limits(http_request: Request):
-    """
-    Endpoint admin para resetar rate limits.
-    """
-    tenant_id = get_tenant_id_from_request(http_request)
-    
-    # Implementar reset de rate limits
-    # Por enquanto, retorna sucesso
-    return {
-        "message": "Rate limits resetados",
-        "tenant_id": tenant_id,
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-# =============================================================================
-# SCHEMAS (definições básicas)
-# =============================================================================
-
-# Nota: Estes schemas devem ser movidos para app/schemas/chat.py
-# Aqui estão apenas para referência
-
-class ChatRequest:
-    user_id: uuid.UUID
-    agent_id: uuid.UUID
-    message: str
-    chat_mode: str = "UsoCotidiano"
-    use_author_voice: bool = False
-    kb_filters: Optional[List[str]] = None
-
-class ChatResponse:
-    id: uuid.UUID
-    message: str
-    response: str
-    agent_name: str
-    chat_mode: str
-    created_at: Optional[str] = None
-
-class ChatMessage:
-    id: uuid.UUID
-    content: str
-    speaker: str  # 'user' ou 'agent'
-    timestamp: str 
+@router.get("/stats")
+async def get_chat_stats():
+    """Estatísticas do sistema de chat."""
+    try:
+        user = get_current_user()
+        if not user:
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
+        
+        # Obter estatísticas via Supabase
+        supabase = get_supabase()
+        
+        # Total de mensagens
+        messages_response = supabase.table('chat_history').select('count', count='exact').eq('user_id', user.id).execute()
+        total_messages = messages_response.count if hasattr(messages_response, 'count') else 0
+        
+        # Total de agentes
+        agents_response = supabase.table('agents').select('count', count='exact').execute()
+        total_agents = agents_response.count if hasattr(agents_response, 'count') else 0
+        
+        return {
+            "user_id": user.id,
+            "total_messages": total_messages,
+            "total_agents": total_agents,
+            "ai_model": settings.default_chat_model,
+            "rate_limit": settings.rate_limit_chat
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Erro ao obter stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) 

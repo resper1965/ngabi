@@ -86,6 +86,54 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 
 -- =============================================================================
+-- TABELA DE EVENTOS (Sistema de Eventos Híbrido)
+-- =============================================================================
+
+-- Tabela para persistir eventos críticos
+CREATE TABLE IF NOT EXISTS events (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    event_type VARCHAR(100) NOT NULL,
+    data JSONB NOT NULL,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    user_id UUID,
+    processed BOOLEAN DEFAULT false,
+    processed_at TIMESTAMP WITH TIME ZONE,
+    retry_count INTEGER DEFAULT 0,
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Índices para performance da tabela events
+CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
+CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
+CREATE INDEX IF NOT EXISTS idx_events_processed ON events(processed);
+CREATE INDEX IF NOT EXISTS idx_events_tenant_id ON events(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id);
+CREATE INDEX IF NOT EXISTS idx_events_retry_count ON events(retry_count);
+
+-- =============================================================================
+-- TABELA DE WEBHOOKS
+-- =============================================================================
+
+-- Tabela para configurar webhooks
+CREATE TABLE IF NOT EXISTS webhooks (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    event_type VARCHAR(100) NOT NULL,
+    url TEXT NOT NULL,
+    secret TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Índices para performance da tabela webhooks
+CREATE INDEX IF NOT EXISTS idx_webhooks_tenant_id ON webhooks(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_webhooks_event_type ON webhooks(event_type);
+CREATE INDEX IF NOT EXISTS idx_webhooks_is_active ON webhooks(is_active);
+
+-- =============================================================================
 -- ROW LEVEL SECURITY (RLS)
 -- =============================================================================
 
@@ -94,6 +142,8 @@ ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE webhooks ENABLE ROW LEVEL SECURITY;
 
 -- Políticas para tenants (público para leitura, admin para escrita)
 CREATE POLICY "Tenants are viewable by everyone" ON tenants FOR SELECT USING (true);
@@ -114,6 +164,18 @@ CREATE POLICY "Chat history is updatable by tenant" ON chat_history FOR UPDATE U
 CREATE POLICY "Users are viewable by tenant" ON users FOR SELECT USING (true);
 CREATE POLICY "Users are insertable by tenant" ON users FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Users are updatable by tenant" ON users FOR UPDATE USING (auth.role() = 'authenticated');
+
+-- Políticas para events (eventos só são visíveis para o tenant correspondente)
+CREATE POLICY "Events are viewable by tenant" ON events FOR SELECT USING (true);
+CREATE POLICY "Events are insertable by authenticated users" ON events FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Events are updatable by tenant" ON events FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Events are deletable by tenant" ON events FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Políticas para webhooks (webhooks só são visíveis para o tenant correspondente)
+CREATE POLICY "Webhooks are viewable by tenant" ON webhooks FOR SELECT USING (true);
+CREATE POLICY "Webhooks are insertable by authenticated users" ON webhooks FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Webhooks are updatable by tenant" ON webhooks FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Webhooks are deletable by tenant" ON webhooks FOR DELETE USING (auth.role() = 'authenticated');
 
 -- =============================================================================
 -- DADOS INICIAIS

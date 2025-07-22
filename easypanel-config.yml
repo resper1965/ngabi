@@ -1,0 +1,181 @@
+# 🚀 Configuração EasyPanel para n.Gabi
+# Deploy automatizado com zero-downtime
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # FRONTEND (React + Vite)
+  # =============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ngabi-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_BASE_URL=https://api.ngabi.ness.tec.br
+    networks:
+      - ngabi-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`ngabi.ness.tec.br`)"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+
+  # =============================================================================
+  # BACKEND (FastAPI + Python)
+  # =============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ngabi-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - REDIS_URL=redis://ngabi-redis:6379
+      - CORS_ORIGINS=https://ngabi.ness.tec.br,https://www.ngabi.ness.tec.br
+      - APP_NAME=n.Gabi
+      - APP_VERSION=2.0.0
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    depends_on:
+      - redis
+    networks:
+      - ngabi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.ngabi.ness.tec.br`)"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+
+  # =============================================================================
+  # REDIS (Cache e Sessões)
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: ngabi-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ngabi-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  # =============================================================================
+  # TRAEFIK (Reverse Proxy + SSL)
+  # =============================================================================
+  traefik:
+    image: traefik:v2.10
+    container_name: ngabi-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_data:/data
+    networks:
+      - ngabi-network
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@ngabi.ness.tec.br"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+      - "--log.level=INFO"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.ngabi.ness.tec.br`)"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+
+  # =============================================================================
+  # POSTGRESQL (Opcional - Backup Local)
+  # =============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: ngabi-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=ngabi_backup
+      - POSTGRES_USER=ngabi_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "5432:5432"
+    networks:
+      - ngabi-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ngabi_user -d ngabi_backup"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # BACKUP SERVICE
+  # =============================================================================
+  backup:
+    image: postgres:15-alpine
+    container_name: ngabi-backup
+    restart: "no"
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts
+    networks:
+      - ngabi-network
+    command: >
+      sh -c "
+        echo 'Iniciando backup...' &&
+        pg_dump -h ngabi-postgres -U ngabi_user -d ngabi_backup > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql &&
+        echo 'Backup concluído!'
+      "
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  traefik_data:
+    driver: local
+
+networks:
+  ngabi-network:
+    driver: bridge 

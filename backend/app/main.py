@@ -1,5 +1,6 @@
 """
-Aplicação FastAPI principal com Supabase.
+Aplicação FastAPI principal otimizada - Supabase como infraestrutura.
+Foco na lógica de IA e delegação de infraestrutura para Supabase.
 """
 
 from fastapi import FastAPI, Request
@@ -14,8 +15,9 @@ from app.middleware.rate_limit_middleware import (
     LoggingMiddleware,
     MetricsMiddleware
 )
-from app.routers import chat, auth
-from app.database import get_supabase
+from app.routers import chat, auth, events, webhooks
+from app.database import get_supabase, check_database_health
+from app.core.config import settings
 
 # Configurar logging
 logging.basicConfig(
@@ -24,102 +26,137 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Criar aplicação FastAPI
+# =============================================================================
+# FASTAPI APPLICATION
+# =============================================================================
+
 app = FastAPI(
-    title="n.Gabi API",
-    description="API da plataforma n.Gabi com Supabase",
-    version="2.0.0"
+    title=settings.app_name,
+    version=settings.app_version,
+    description="Plataforma de chat multi-agente com IA - Supabase como infraestrutura",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# Configurar CORS
+# =============================================================================
+# MIDDLEWARE CONFIGURATION
+# =============================================================================
+
+# CORS
+origins = settings.cors_origins.split(",") if settings.cors_origins else ["http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configurar para produção
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Adicionar middlewares
+# Rate Limiting (Simplificado)
+if settings.rate_limit_enabled:
+    app.add_middleware(RateLimitMiddleware)
+
+# Logging e Métricas
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(MetricsMiddleware)
-# app.add_middleware(RateLimitMiddleware)  # Comentado temporariamente
 
 # Configurar métricas Prometheus
 setup_prometheus_metrics(app)
 
-# Incluir routers
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(chat.router, prefix="/api/v1")
+# =============================================================================
+# STARTUP EVENT
+# =============================================================================
 
 @app.on_event("startup")
 async def startup_event():
-    """Evento de inicialização da aplicação."""
-    logger.info("🚀 Iniciando n.Gabi Backend com Supabase...")
+    """Inicialização da aplicação."""
+    logger.info("🚀 Iniciando n.Gabi - Chat Multi-Agente")
+    logger.info(f"📋 Versão: {settings.app_version}")
+    logger.info(f"🔧 Modo: {'Debug' if settings.debug else 'Production'}")
     
-    # Configurar métricas
-    logger.info("📈 Métricas habilitadas")
+    logger.info("📊 Métricas configuradas")
     
-    # Verificar conexão com Supabase
+    # Verificar Supabase (Infraestrutura Principal)
     try:
         supabase = get_supabase()
-        # Testar conexão fazendo uma query simples
-        response = supabase.table('tenants').select('id').limit(1).execute()
-        logger.info("✅ Supabase conectado com sucesso")
+        supabase_url = supabase.supabase_url
+        if supabase_url:
+            logger.info(f"✅ Supabase conectado: {supabase_url}")
+            logger.info("🗄️ Banco de dados: Supabase PostgreSQL")
+            logger.info("🔐 Autenticação: Supabase Auth")
+            logger.info("🔄 Realtime: Supabase Realtime")
+        else:
+            logger.warning("⚠️ Supabase não configurado corretamente")
     except Exception as e:
         logger.warning(f"⚠️ Erro ao conectar Supabase: {e}")
-        logger.info("ℹ️ Verifique se o Supabase está configurado")
+        logger.info("ℹ️ Verifique se SUPABASE_URL e SUPABASE_ANON_KEY estão configurados")
     
-    # Verificar conexão com Redis (opcional)
+    # Verificar Cache Redis (Complementar)
     try:
-        from app.core.cache import cache_health_check
-        health = cache_health_check()
-        if health.get("status") == "healthy":
-            logger.info("✅ Redis conectado com sucesso")
+        cache_stats = get_cache_stats()
+        if cache_stats.get("connected"):
+            logger.info("💾 Cache Redis: Conectado")
         else:
-            logger.warning("⚠️ Redis não disponível, cache desabilitado")
+            logger.warning("⚠️ Cache Redis: Não conectado")
     except Exception as e:
-        logger.warning(f"⚠️ Erro ao conectar Redis: {e}")
-        logger.info("ℹ️ Aplicação funcionará sem cache")
+        logger.warning(f"⚠️ Erro no cache Redis: {e}")
     
-    logger.info("🎉 n.Gabi Backend iniciado com sucesso!")
+    # Verificar Eventos
+    if settings.events_enabled:
+        logger.info("📡 Sistema de Eventos: Habilitado")
+    if settings.webhooks_enabled:
+        logger.info("🔗 Webhooks: Habilitados")
+    
+    logger.info("🎯 Foco: Lógica de IA e Chat Multi-Agente")
+    logger.info("🏗️ Infraestrutura: Supabase (DB, Auth, Realtime)")
+    logger.info("✅ n.Gabi iniciado com sucesso!")
 
-@app.get("/")
-async def root():
-    """Endpoint raiz."""
-    return {
-        "message": "n.Gabi API",
-        "version": "2.0.0",
-        "status": "running",
-        "database": "Supabase",
-        "auth": "Supabase Auth"
-    }
+# =============================================================================
+# HEALTH CHECK ENDPOINT
+# =============================================================================
 
 @app.get("/health")
 async def health_check():
     """Health check da aplicação."""
     try:
         # Verificar Supabase
-        supabase = get_supabase()
-        supabase.table('tenants').select('id').limit(1).execute()
+        db_health = await check_database_health()
         
-        # Verificar Redis
-        try:
-            cache_health = cache_health_check()
-            cache_status = cache_health.get("status", "unknown") if isinstance(cache_health, dict) else "unknown"
-        except:
-            cache_status = "unavailable"
+        # Verificar Cache
+        cache_health = cache_health_check()
         
         return {
             "status": "healthy",
-            "database": "supabase",
-            "auth": "supabase",
-            "cache": cache_status,
+            "application": settings.app_name,
+            "version": settings.app_version,
+            "infrastructure": {
+                "database": "supabase",
+                "auth": "supabase",
+                "realtime": "supabase",
+                "cache": "redis"
+            },
+            "services": {
+                "database": db_health.get("status", "unknown"),
+                "cache": cache_health.get("status", "unknown"),
+                "events": "enabled" if settings.events_enabled else "disabled",
+                "webhooks": "enabled" if settings.webhooks_enabled else "disabled"
+            },
+            "ai": {
+                "model": settings.default_chat_model,
+                "temperature": settings.temperature,
+                "max_tokens": settings.max_tokens
+            },
+            "rate_limiting": {
+                "enabled": settings.rate_limit_enabled,
+                "default_limit": settings.rate_limit_default,
+                "chat_limit": settings.rate_limit_chat
+            },
             "timestamp": "2024-07-21T18:38:34Z"
         }
     except Exception as e:
+        logger.error(f"❌ Erro no health check: {e}")
         return JSONResponse(
-            status_code=503,
+            status_code=500,
             content={
                 "status": "unhealthy",
                 "error": str(e),
@@ -127,20 +164,85 @@ async def health_check():
             }
         )
 
+# =============================================================================
+# METRICS ENDPOINT
+# =============================================================================
+
 @app.get("/metrics")
 async def get_metrics():
     """Endpoint para métricas Prometheus."""
     return metrics
 
-@app.get("/cache/stats")
-async def get_cache_stats():
-    """Estatísticas do cache Redis."""
-    return get_cache_stats()
+# =============================================================================
+# CACHE ENDPOINTS
+# =============================================================================
 
 @app.get("/cache/health")
 async def cache_health():
     """Health check do cache."""
     return cache_health_check()
+
+@app.get("/cache/stats")
+async def cache_stats():
+    """Estatísticas do cache."""
+    return get_cache_stats()
+
+# =============================================================================
+# ROUTERS (Foco na Lógica de Negócio)
+# =============================================================================
+
+# Autenticação (Delegada para Supabase)
+app.include_router(auth.router, prefix="/api/v1")
+
+# Chat (Foco Principal - Lógica de IA)
+app.include_router(chat.router, prefix="/api/v1")
+
+# Eventos (Complementar)
+if settings.events_enabled:
+    app.include_router(events.router, prefix="/api/v1")
+
+# Webhooks (Complementar)
+if settings.webhooks_enabled:
+    app.include_router(webhooks.router, prefix="/api/v1")
+
+# =============================================================================
+# ROOT ENDPOINT
+# =============================================================================
+
+@app.get("/")
+async def root():
+    """Endpoint raiz com informações da aplicação."""
+    return {
+        "message": f"Bem-vindo ao {settings.app_name}",
+        "version": settings.app_version,
+        "description": "Plataforma de chat multi-agente com IA",
+        "architecture": {
+            "focus": "AI Logic & Chat Multi-Agent",
+            "infrastructure": "Supabase (DB, Auth, Realtime)",
+            "cache": "Redis (Complementar)",
+            "events": "Hybrid Event System"
+        },
+        "docs": "/docs",
+        "health": "/health",
+        "metrics": "/metrics"
+    }
+
+# =============================================================================
+# ERROR HANDLERS
+# =============================================================================
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handler global de exceções."""
+    logger.error(f"❌ Erro não tratado: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Erro interno do servidor",
+            "message": str(exc) if settings.debug else "Algo deu errado",
+            "timestamp": "2024-07-21T18:38:34Z"
+        }
+    )
 
 if __name__ == "__main__":
     import uvicorn
