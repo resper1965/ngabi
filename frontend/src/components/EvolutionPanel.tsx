@@ -27,7 +27,7 @@ const EvolutionPanel: React.FC<EvolutionPanelProps> = ({ apiBaseUrl }) => {
     try {
       setLoading(true);
       const response = await axios.get(`${apiBaseUrl}/api/v1/evolution/instances`);
-      setInstances(response.data);
+      setInstances(response.data as Instance[]);
     } catch (error) {
       console.error('Erro ao carregar instâncias:', error);
     } finally {
@@ -58,7 +58,7 @@ const EvolutionPanel: React.FC<EvolutionPanelProps> = ({ apiBaseUrl }) => {
     try {
       setLoading(true);
       const response = await axios.get(`${apiBaseUrl}/api/v1/evolution/instance/${instanceName}/qr`);
-      setQrCode(response.data.qrcode);
+      setQrCode((response.data as any).qrcode);
       setSelectedInstance(instanceName);
     } catch (error) {
       console.error('Erro ao gerar QR code:', error);

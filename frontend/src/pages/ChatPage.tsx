@@ -1,4 +1,4 @@
-import { useState } from 'react';
+// import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -6,7 +6,28 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Bot, User, Database } from 'lucide-react';
 
-export function ChatPage() {
+interface Message {
+  id: string;
+  content: string;
+  sender: 'user' | 'agent';
+  timestamp: Date;
+}
+
+interface KnowledgeBase {
+  id: string;
+  name: string;
+  selected: boolean;
+}
+
+interface ChatPageProps {
+  agentName: string;
+  onSendMessage?: (message: string, mode: string, selectedKBs: string[]) => void;
+  messages?: Message[];
+  knowledgeBases?: KnowledgeBase[];
+  isLoading?: boolean;
+}
+
+export function ChatPage({ agentName }: ChatPageProps) {
   // TODO: carregar agentes via fetchAgents()
   // TODO: carregar bases via fetchKBs()
 
@@ -14,7 +35,7 @@ export function ChatPage() {
     <div className="h-full flex flex-col space-y-4">
       {/* Header com título e AgentSelector */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Chat com</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Chat com {agentName}</h1>
         <div className="w-64">
           <Select>
             <SelectTrigger className="w-full">

@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Edit, Trash2, Search, Users, Shield, Mail } from 'lucide-react';
-import { fetchUsers, User } from '@/services/api';
+import { fetchUsers } from '@/services/api';
 
 /**
  * WIREFRAME TEXTUAL:
@@ -91,7 +91,7 @@ export function UsersPage({
   useEffect(() => {
     setLoading(true);
     fetchUsers().then(data => {
-      setUsers(data);
+      setUsers(data as unknown as User[]);
     }).finally(() => setLoading(false));
   }, []);
 

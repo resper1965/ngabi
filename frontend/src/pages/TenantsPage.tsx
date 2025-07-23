@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Edit, Trash2, Search, Building2 } from 'lucide-react';
-import { fetchTenants, type Tenant } from '@/services/api';
+import { fetchTenants } from '@/services/api';
 
 /**
  * WIREFRAME TEXTUAL:
@@ -70,13 +70,13 @@ export function TenantsPage({
     subdomain: ''
   });
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
+    // setLoading(true);
     fetchTenants().then(data => {
-      setTenants(data);
-    }).finally(() => setLoading(false));
+      setTenants(data as unknown as Tenant[]);
+    }); // .finally(() => setLoading(false));
   }, []);
 
   const filteredTenants = tenants.filter(tenant =>
