@@ -7,21 +7,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Build outputs
+dist/
+dist-ssr/
+build/
+*.egg-info/
 
 # Environment variables
 .env
@@ -35,23 +31,6 @@ dist-ssr
 *.tar.gz
 *.tar.bz2
 
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
 # IDE
 .vscode/
 .idea/
@@ -64,4 +43,16 @@ Thumbs.db
 
 # Temporary files
 *.tmp
-*.temp 
+*.temp
+
+# Python
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
