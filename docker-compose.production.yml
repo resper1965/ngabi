@@ -1,12 +1,11 @@
-# Configuração para EasyPanel - n.Gabi
-# Copie este conteúdo para o EasyPanel
-
 version: '3.8'
 
 services:
-  ngabi-frontend:
-    image: ngabi-frontend:latest
-    container_name: ngabi-frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: ngabi-frontend-prod
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
@@ -16,10 +15,13 @@ services:
       - "traefik.http.services.ngabi-frontend.loadbalancer.server.port=3000"
     networks:
       - traefik-public
+      - ngabi-network
 
-  ngabi-backend:
-    image: ngabi-backend:latest
-    container_name: ngabi-backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: ngabi-backend-prod
     restart: unless-stopped
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
@@ -47,22 +49,35 @@ services:
       - "traefik.http.routers.ngabi-backend.entrypoints=websecure"
       - "traefik.http.routers.ngabi-backend.tls.certresolver=letsencrypt"
       - "traefik.http.services.ngabi-backend.loadbalancer.server.port=8000"
+    depends_on:
+      - redis
     networks:
       - traefik-public
+      - ngabi-network
 
-  ngabi-redis:
+  redis:
     image: redis:7-alpine
-    container_name: ngabi-redis
+    container_name: ngabi-redis-prod
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     networks:
-      - traefik-public
+      - ngabi-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   traefik-public:
     external: true
+  ngabi-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
 volumes:
-  redis_data:
+  redis_data: 

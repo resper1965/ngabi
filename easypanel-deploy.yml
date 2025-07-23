@@ -1,4 +1,4 @@
-# Configuração para EasyPanel - n.Gabi
+# Configuração para deploy no EasyPanel
 # Copie este conteúdo para o EasyPanel
 
 version: '3.8'
@@ -14,6 +14,7 @@ services:
       - "traefik.http.routers.ngabi-frontend.entrypoints=websecure"
       - "traefik.http.routers.ngabi-frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.ngabi-frontend.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.ngabi-frontend-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
     networks:
       - traefik-public
 
@@ -65,4 +66,4 @@ networks:
     external: true
 
 volumes:
-  redis_data:
+  redis_data: 
