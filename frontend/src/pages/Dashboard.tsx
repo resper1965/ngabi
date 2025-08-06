@@ -13,36 +13,17 @@ import {
   ChevronRight,
   User,
   Menu,
-  Smartphone,
-  LogOut
+  Bot,
+  LogOut,
+  Sparkles
 } from 'lucide-react';
-
-/**
- * WIREFRAME TEXTUAL:
- * 
- * ┌─────────────────────────────────────────────────────────┐
- * │ [🍔] [LOGO] Chat Multi-Agent    [👤 Nome] [⚙️]        │ ← Topbar
- * ├─────────────────────────────────────────────────────────┤
- * │                                                         │
- * │ [💬] Chat                    │                         │
- * │ [🏢] Tenants                 │                         │
- * │ [👥] Usuários               │                         │
- * │ [🎨] Branding               │                         │
- * │ [⚙️] Configurações          │                         │
- * │                                                         │
- * │ ← Sidebar (recolhível)     │     Área Principal       │
- * │                             │                         │
- * │                             │                         │
- * │                             │                         │
- * │                             │                         │
- * └─────────────────────────────────────────────────────────┘
- */
 
 interface SidebarItem {
   id: string;
   label: string;
   icon: React.ReactNode;
   href: string;
+  description?: string;
 }
 
 interface DashboardProps {
@@ -59,37 +40,43 @@ const sidebarItems: SidebarItem[] = [
     id: 'chat',
     label: 'Chat',
     icon: <MessageSquare className="w-5 h-5" />,
-    href: '/chat'
+    href: '/chat',
+    description: 'Conversa com agentes IA'
   },
   {
     id: 'evolution',
-    label: 'WhatsApp',
-    icon: <Smartphone className="w-5 h-5" />,
-    href: '/evolution'
+    label: 'Evolution',
+    icon: <Sparkles className="w-5 h-5" />,
+    href: '/evolution',
+    description: 'Evolução de agentes'
   },
   {
     id: 'tenants',
-    label: 'Tenants',
+    label: 'Organizações',
     icon: <Building2 className="w-5 h-5" />,
-    href: '/tenants'
+    href: '/tenants',
+    description: 'Gerenciar tenants'
   },
   {
     id: 'users',
     label: 'Usuários',
     icon: <Users className="w-5 h-5" />,
-    href: '/users'
+    href: '/users',
+    description: 'Gerenciar usuários'
   },
   {
     id: 'branding',
     label: 'Branding',
     icon: <Palette className="w-5 h-5" />,
-    href: '/branding'
+    href: '/branding',
+    description: 'Personalização visual'
   },
   {
     id: 'settings',
     label: 'Configurações',
     icon: <Settings className="w-5 h-5" />,
-    href: '/settings'
+    href: '/settings',
+    description: 'Configurações do sistema'
   }
 ];
 
@@ -102,6 +89,7 @@ export function Dashboard({
   userName
 }: DashboardProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   
   const displayName = userName || user?.email || user?.user_metadata?.full_name || 'Usuário';
@@ -111,22 +99,25 @@ export function Dashboard({
       {/* Sidebar */}
       <div className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 ${
         sidebarCollapsed ? 'w-16' : 'w-64'
-      }`}>
+      } ${mobileMenuOpen ? 'fixed inset-y-0 left-0 z-50 w-64' : 'hidden md:block'}`}>
         <div className="flex flex-col h-full">
           {/* Logo/Brand */}
           <div className="p-4 border-b border-gray-700">
             {sidebarCollapsed ? (
               <div className="flex justify-center">
-                <div className="w-8 h-8 bg-[#00ade8] rounded flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">C</span>
+                <div className="w-10 h-10 bg-[#00ade8] rounded-lg flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-white" />
                 </div>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-[#00ade8] rounded flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">C</span>
+                <div className="w-10 h-10 bg-[#00ade8] rounded-lg flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-white" />
                 </div>
-                <span className="font-semibold text-white">Chat Multi-Agent</span>
+                <div>
+                  <span className="font-bold text-white text-lg">n.Gabi</span>
+                  <p className="text-xs text-gray-400">Chat Multi-Agent</p>
+                </div>
               </div>
             )}
           </div>
@@ -136,20 +127,44 @@ export function Dashboard({
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => onNavigate(item.href)}
-                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
+                onClick={() => {
+                  onNavigate(item.href);
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   currentPage === item.id
-                    ? 'bg-[#00ade8] text-white'
+                    ? 'bg-[#00ade8] text-white shadow-lg'
                     : 'text-gray-200 hover:bg-gray-700 hover:text-white'
                 }`}
+                title={item.description}
               >
                 {item.icon}
                 {!sidebarCollapsed && (
-                  <span className="text-sm font-medium">{item.label}</span>
+                  <div className="flex-1 text-left">
+                    <span className="text-sm font-medium">{item.label}</span>
+                    {item.description && (
+                      <p className="text-xs opacity-70 mt-0.5">{item.description}</p>
+                    )}
+                  </div>
                 )}
               </button>
             ))}
           </nav>
+
+          {/* User Info */}
+          {!sidebarCollapsed && (
+            <div className="p-4 border-t border-gray-700">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-gray-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{displayName}</p>
+                  <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Collapse Toggle */}
           <div className="p-4 border-t border-gray-700">
@@ -157,7 +172,8 @@ export function Dashboard({
               variant="ghost"
               size="sm"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="w-full"
+              className="w-full text-gray-300 hover:text-white"
+              title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"}
             >
               {sidebarCollapsed ? (
                 <ChevronRight className="w-4 h-4" />
@@ -169,35 +185,49 @@ export function Dashboard({
         </div>
       </div>
 
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Topbar */}
-        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <header className="bg-gray-800 border-b border-gray-700 px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Mobile Menu Button */}
-              <Button variant="ghost" size="sm" className="md:hidden">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                title="Abrir menu"
+              >
                 <Menu className="w-5 h-5" />
               </Button>
 
-              {/* TODO: carregar logo do tenant via API */}
+              {/* Tenant Logo */}
               {tenantLogo ? (
-                <img src={tenantLogo} alt="Logo" className="h-8 w-auto" />
+                <img src={tenantLogo} alt="Logo da organização" className="h-8 w-auto" />
               ) : (
-                              <div className="h-8 w-8 bg-gray-600 rounded flex items-center justify-center">
-                <span className="text-gray-300 text-sm font-bold">T</span>
+                <div className="h-8 w-8 bg-gray-600 rounded-lg flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-gray-300" />
                 </div>
               )}
 
-              {/* TODO: carregar nome do orquestrador via API */}
+              {/* Orchestrator Info */}
               <div className="hidden md:block">
                 <span className="text-sm text-gray-300">Orquestrador:</span>
                 <span className="ml-2 font-medium text-white">{orchestratorName}</span>
               </div>
             </div>
 
-            {/* User Info and Logout */}
-            <div className="flex items-center space-x-3">
+            {/* User Actions */}
+            <div className="flex items-center space-x-2 md:space-x-3">
               <span className="text-sm text-gray-300 hidden md:block">{displayName}</span>
               <NotificationCenter />
               <ModeToggle />
@@ -205,12 +235,17 @@ export function Dashboard({
                 variant="ghost"
                 size="sm"
                 onClick={signOut}
-                className="flex items-center space-x-2 text-gray-300 hover:text-red-400"
+                className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors"
+                title="Sair da aplicação"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden md:block">Sair</span>
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                title="Perfil do usuário"
+              >
                 <User className="w-5 h-5" />
               </Button>
             </div>
@@ -218,7 +253,7 @@ export function Dashboard({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6">
           {children}
         </main>
       </div>

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ChatMessage } from '../components/chat-message'
 import { ProcessingStatus } from '../components/processing-status'
-import { Send, Settings, MessageSquare } from 'lucide-react'
+import { Send, Settings, MessageSquare, Bot, Sparkles } from 'lucide-react'
 
 interface Message {
   id: string
@@ -65,16 +65,22 @@ export function ChatPage({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-700 bg-gray-800/50 rounded-t-lg">
         <div className="flex items-center space-x-3">
-          <div className="w-3 h-3 bg-[#00ade8] rounded-full"></div>
-          <h1 className="text-xl font-semibold text-white">{agentName}</h1>
+          <div className="w-3 h-3 bg-[#00ade8] rounded-full animate-pulse"></div>
+          <div className="flex items-center space-x-2">
+            <Bot className="w-5 h-5 text-[#00ade8]" />
+            <h1 className="text-xl md:text-2xl font-semibold text-white">{agentName}</h1>
+          </div>
+          <Badge variant="secondary" className="text-xs">
+            {selectedMode}
+          </Badge>
         </div>
         <div className="flex items-center space-x-2">
           <Select value={selectedMode} onValueChange={setSelectedMode}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32 md:w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -90,16 +96,28 @@ export function ChatPage({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col md:flex-row">
         {/* Messages */}
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-4 md:p-6">
           <ScrollArea className="h-full">
             <div className="space-y-4">
               {messages.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhuma mensagem ainda</p>
-                  <p className="text-sm">Comece uma conversa com {agentName}</p>
+                <div className="text-center py-12">
+                  <div className="flex justify-center mb-6">
+                    <div className="w-16 h-16 bg-gray-800 rounded-2xl flex items-center justify-center">
+                      <MessageSquare className="w-8 h-8 text-gray-400" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Bem-vindo ao {agentName}
+                  </h3>
+                  <p className="text-gray-400 mb-4">
+                    Comece uma conversa para explorar as capacidades do agente
+                  </p>
+                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Powered by AI</span>
+                  </div>
                 </div>
               ) : (
                 messages.map((message) => (
@@ -126,55 +144,62 @@ export function ChatPage({
           </ScrollArea>
         </div>
 
-        {/* Knowledge Bases */}
-        <Card className="m-4">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <MessageSquare className="w-5 h-5 text-gray-500" />
-              <span>Bases de Conhecimento</span>
-              <Badge variant="secondary" className="text-xs">
-                {selectedKBs.length} selecionadas
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {knowledgeBases.map((kb) => (
-                <div key={kb.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={kb.id}
-                    checked={selectedKBs.includes(kb.id)}
-                    onCheckedChange={(checked) => handleKBChange(kb.id, checked as boolean)}
-                  />
-                  <label htmlFor={kb.id} className="text-sm text-gray-300">
-                    {kb.name}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Knowledge Bases Sidebar */}
+        <div className="w-full md:w-80 p-4 md:p-6 border-t md:border-t-0 md:border-l border-gray-700 bg-gray-800/30">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MessageSquare className="w-5 h-5 text-[#00ade8]" />
+                <span>Bases de Conhecimento</span>
+                <Badge variant="secondary" className="text-xs">
+                  {selectedKBs.length} selecionadas
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {knowledgeBases.map((kb) => (
+                  <div key={kb.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700/50 transition-colors">
+                    <Checkbox
+                      id={kb.id}
+                      checked={selectedKBs.includes(kb.id)}
+                      onCheckedChange={(checked) => handleKBChange(kb.id, checked as boolean)}
+                    />
+                    <label htmlFor={kb.id} className="text-sm text-gray-300 cursor-pointer flex-1">
+                      {kb.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-gray-700">
-          <div className="flex space-x-2">
-            <Textarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Digite sua mensagem..."
-              className="flex-1 resize-none"
-              disabled={isLoading}
-              rows={3}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!inputMessage.trim() || isLoading}
-              className="px-4"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
+      {/* Input Area */}
+      <div className="p-4 md:p-6 border-t border-gray-700 bg-gray-800/50 rounded-b-lg">
+        <div className="flex space-x-3">
+          <Textarea
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Digite sua mensagem..."
+            className="flex-1 resize-none min-h-[60px] max-h-[120px]"
+            disabled={isLoading}
+            rows={3}
+          />
+          <Button
+            onClick={handleSend}
+            disabled={!inputMessage.trim() || isLoading}
+            className="px-6 h-[60px]"
+            size="lg"
+          >
+            <Send className="w-5 h-5" />
+          </Button>
+        </div>
+        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+          <span>Pressione Enter para enviar, Shift+Enter para nova linha</span>
+          <span>{inputMessage.length} caracteres</span>
         </div>
       </div>
     </div>
