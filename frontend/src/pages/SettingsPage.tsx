@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Moon, Sun, Thermometer, Download, Upload, Save, RefreshCw } from 'lucide-react';
+import { ChatSettings } from '../components/chat-settings';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Moon, Sun, Thermometer, Download, Upload, Save, RefreshCw, Info } from 'lucide-react';
 
 /**
  * WIREFRAME TEXTUAL:
@@ -132,9 +134,21 @@ export function SettingsPage({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Configurações Gerais</h1>
-        <p className="text-gray-600">Personalize a experiência da plataforma</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Configurações Gerais</h1>
+        <p className="text-gray-600 dark:text-gray-400">Personalize a experiência da plataforma</p>
       </div>
+
+      {/* Info Alert */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertTitle>Configurações do Sistema</AlertTitle>
+        <AlertDescription>
+          As configurações são salvas automaticamente. Algumas mudanças podem requerer reinicialização do sistema.
+        </AlertDescription>
+      </Alert>
+
+      {/* Chat Settings */}
+      <ChatSettings onSave={handleSave} />
 
       {/* Appearance Settings */}
       <Card>

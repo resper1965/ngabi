@@ -1,10 +1,14 @@
-// import { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Bot, User, Database } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { ChatMessage } from '../components/chat-message';
+import { ProcessingStatus } from '../components/processing-status';
+import { Send, Bot, User, Database, Settings } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -27,27 +31,73 @@ interface ChatPageProps {
   isLoading?: boolean;
 }
 
-export function ChatPage({ agentName }: ChatPageProps) {
-  // TODO: carregar agentes via fetchAgents()
-  // TODO: carregar bases via fetchKBs()
+export function ChatPage({ 
+  agentName, 
+  onSendMessage, 
+  messages = [], 
+  knowledgeBases = [], 
+  isLoading = false 
+}: ChatPageProps) {
+  const [message, setMessage] = useState('');
+  const [selectedAgent, setSelectedAgent] = useState(agentName);
+  const [selectedMode, setSelectedMode] = useState('daily');
+  const [selectedKBs, setSelectedKBs] = useState<string[]>([]);
+  const [processingProgress, setProcessingProgress] = useState(0);
+
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
+    
+    onSendMessage?.(message, selectedMode, selectedKBs);
+    setMessage('');
+    
+    // Simular progresso de processamento
+    if (isLoading) {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        setProcessingProgress(progress);
+        if (progress >= 100) {
+          clearInterval(interval);
+          setProcessingProgress(0);
+        }
+      }, 200);
+    }
+  };
+
+  const handleKBChange = (kbId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedKBs([...selectedKBs, kbId]);
+    } else {
+      setSelectedKBs(selectedKBs.filter(id => id !== kbId));
+    }
+  };
 
   return (
     <div className="h-full flex flex-col space-y-4">
       {/* Header com título e AgentSelector */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Chat com {agentName}</h1>
-        <div className="w-64">
-          <Select>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione um agente" />
-            </SelectTrigger>
-            <SelectContent>
-              {/* TODO: mapear agentes do tenant */}
-              <SelectItem value="agent1">Agente 1</SelectItem>
-              <SelectItem value="agent2">Agente 2</SelectItem>
-              <SelectItem value="agent3">Agente 3</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center space-x-3">
+          <h1 className="text-2xl font-bold text-white">Chat com {selectedAgent}</h1>
+          <Badge variant="outline" className="text-xs">
+            {selectedMode === 'daily' ? 'Uso Cotidiano' : 'Escrita Longa'}
+          </Badge>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-48">
+            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione um agente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="n.Gabi">n.Gabi</SelectItem>
+                <SelectItem value="assistant">Assistente</SelectItem>
+                <SelectItem value="specialist">Especialista</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button variant="outline" size="icon">
+            <Settings className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
@@ -57,32 +107,32 @@ export function ChatPage({ agentName }: ChatPageProps) {
           <CardTitle className="flex items-center space-x-2">
             <Database className="w-5 h-5 text-gray-500" />
             <span>Bases de Conhecimento</span>
+            <Badge variant="secondary" className="text-xs">
+              {selectedKBs.length} selecionadas
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-6">
-            {/* TODO: mapear bases de conhecimento */}
-            <label className="flex items-center space-x-2">
-              <Checkbox id="kb-livros" />
-              <span>Livros</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <Checkbox id="kb-processos" />
-              <span>Processos</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <Checkbox id="kb-jurisprudencia" />
-              <span>Jurisprudência</span>
-            </label>
+          <div className="flex flex-wrap gap-4">
+            {knowledgeBases.map((kb) => (
+              <label key={kb.id} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={kb.id}
+                  checked={selectedKBs.includes(kb.id)}
+                  onCheckedChange={(checked) => handleKBChange(kb.id, checked as boolean)}
+                />
+                <span className="text-sm">{kb.name}</span>
+              </label>
+            ))}
           </div>
         </CardContent>
       </Card>
 
       {/* ModeSelector */}
       <div className="flex items-center space-x-4">
-        <span className="text-sm font-medium text-gray-700">Modo:</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Modo:</span>
         <div className="w-56">
-          <Select>
+          <Select value={selectedMode} onValueChange={setSelectedMode}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Selecione o modo" />
             </SelectTrigger>
@@ -94,41 +144,62 @@ export function ChatPage({ agentName }: ChatPageProps) {
         </div>
       </div>
 
+      {/* Processing Status */}
+      <ProcessingStatus 
+        isProcessing={isLoading}
+        progress={processingProgress}
+        currentStep="Processando resposta..."
+        totalSteps={4}
+        currentStepIndex={Math.floor(processingProgress / 25)}
+      />
+
       {/* MessageList */}
       <Card className="flex-1 min-h-0">
         <CardContent className="p-4 h-full flex flex-col">
-          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-            {/* TODO: mapear mensagens */}
-            <div className="flex justify-start">
-              <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-gray-100 text-gray-800 flex items-start space-x-2">
-                <Bot className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm">Olá! Como posso ajudar?</p>
-                  <p className="text-xs mt-1 text-gray-500">09:00</p>
+          <ScrollArea className="flex-1">
+            <div className="space-y-4 mb-4">
+              {messages.length === 0 ? (
+                <div className="flex justify-start">
+                  <ChatMessage
+                    id="welcome"
+                    content="Olá! Como posso ajudá-lo hoje?"
+                    sender="agent"
+                    timestamp={new Date()}
+                    agentName={selectedAgent}
+                  />
                 </div>
-              </div>
+              ) : (
+                messages.map((msg) => (
+                  <ChatMessage
+                    key={msg.id}
+                    id={msg.id}
+                    content={msg.content}
+                    sender={msg.sender}
+                    timestamp={msg.timestamp}
+                    agentName={selectedAgent}
+                    isTyping={isLoading && msg.sender === 'agent'}
+                  />
+                ))
+              )}
             </div>
-            <div className="flex justify-end">
-              <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-blue-500 text-white flex items-start space-x-2">
-                <div className="flex-1">
-                  <p className="text-sm">Preciso de ajuda com um processo.</p>
-                  <p className="text-xs mt-1 text-blue-100">09:01</p>
-                </div>
-                <User className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              </div>
-            </div>
-          </div>
+          </ScrollArea>
         </CardContent>
       </Card>
 
       {/* MessageInput */}
-      <form className="flex space-x-2 pt-2" onSubmit={e => { e.preventDefault(); /* TODO: chamar sendChat({ agent_id, message, kb_filters, chatMode }) */ }}>
+      <form className="flex space-x-2 pt-2" onSubmit={(e) => { 
+        e.preventDefault(); 
+        handleSendMessage();
+      }}>
         <Textarea
           className="flex-1 resize-none"
           placeholder="Digite sua mensagem..."
           rows={2}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          disabled={isLoading}
         />
-        <Button type="submit" size="sm" className="h-10">
+        <Button type="submit" size="sm" className="h-10" disabled={isLoading || !message.trim()}>
           <Send className="w-4 h-4" />
         </Button>
       </form>

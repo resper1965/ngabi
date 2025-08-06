@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
-import { Login } from './pages/Login'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthComponent } from './components/Auth'
 import { Dashboard } from './pages/Dashboard'
 import { ChatPage } from './pages/ChatPage'
 import { TenantsPage } from './pages/TenantsPage'
@@ -23,14 +24,7 @@ interface KnowledgeBase {
   selected: boolean;
 }
 
-// Componente para rotas protegidas
-function ProtectedRoute({ children, isAuthenticated }: { children: React.ReactNode; isAuthenticated: boolean }) {
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <>{children}</>;
-}
+
 
 // Componente para o layout do Dashboard com rotas aninhadas
 function DashboardLayout() {
@@ -123,15 +117,19 @@ function DashboardLayout() {
   );
 }
 
-function App() {
-  // Iniciar como autenticado para permitir acesso direto
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+function AppContent() {
+  const { session, loading } = useAuth();
 
-  const handleLogin = (email: string, password: string) => {
-    // TODO: Implementar autenticação real
-    console.log('Login:', { email, password });
-    setIsAuthenticated(true);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Router>
@@ -139,23 +137,37 @@ function App() {
         <Route 
           path="/login" 
           element={
-            isAuthenticated ? (
+            session ? (
               <Navigate to="/" replace />
             ) : (
-              <Login onLogin={handleLogin} />
+              <AuthComponent />
             )
           } 
         />
         <Route 
           path="/*" 
           element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
+            session ? (
               <DashboardLayout />
-            </ProtectedRoute>
+            ) : (
+              <Navigate to="/login" replace />
+            )
           } 
         />
       </Routes>
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <div className="dark">
+          <AppContent />
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 

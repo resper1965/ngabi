@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '../contexts/AuthContext';
+import { ModeToggle } from '../components/mode-toggle';
+import { NotificationCenter } from '../components/notification-center';
 import { 
   MessageSquare, 
   Building2, 
@@ -10,7 +13,8 @@ import {
   ChevronRight,
   User,
   Menu,
-  Smartphone
+  Smartphone,
+  LogOut
 } from 'lucide-react';
 
 /**
@@ -94,32 +98,35 @@ export function Dashboard({
   currentPage, 
   onNavigate, 
   tenantLogo,
-  orchestratorName = 'Agente Orquestrador',
-  userName = 'Usuário'
+  orchestratorName = 'n.Gabi',
+  userName
 }: DashboardProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { user, signOut } = useAuth();
+  
+  const displayName = userName || user?.email || user?.user_metadata?.full_name || 'Usuário';
 
   return (
-    <div className="h-screen flex bg-gray-50">
+    <div className="h-screen flex bg-gray-900">
       {/* Sidebar */}
-      <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${
+      <div className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 ${
         sidebarCollapsed ? 'w-16' : 'w-64'
       }`}>
         <div className="flex flex-col h-full">
           {/* Logo/Brand */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-700">
             {sidebarCollapsed ? (
               <div className="flex justify-center">
-                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                <div className="w-8 h-8 bg-[#00ade8] rounded flex items-center justify-center">
                   <span className="text-white text-sm font-bold">C</span>
                 </div>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                <div className="w-8 h-8 bg-[#00ade8] rounded flex items-center justify-center">
                   <span className="text-white text-sm font-bold">C</span>
                 </div>
-                <span className="font-semibold text-gray-900">Chat Multi-Agent</span>
+                <span className="font-semibold text-white">Chat Multi-Agent</span>
               </div>
             )}
           </div>
@@ -132,8 +139,8 @@ export function Dashboard({
                 onClick={() => onNavigate(item.href)}
                 className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
                   currentPage === item.id
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-[#00ade8] text-white'
+                    : 'text-gray-200 hover:bg-gray-700 hover:text-white'
                 }`}
               >
                 {item.icon}
@@ -145,7 +152,7 @@ export function Dashboard({
           </nav>
 
           {/* Collapse Toggle */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-700">
             <Button
               variant="ghost"
               size="sm"
@@ -165,7 +172,7 @@ export function Dashboard({
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Topbar */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Mobile Menu Button */}
@@ -177,21 +184,32 @@ export function Dashboard({
               {tenantLogo ? (
                 <img src={tenantLogo} alt="Logo" className="h-8 w-auto" />
               ) : (
-                <div className="h-8 w-8 bg-gray-300 rounded flex items-center justify-center">
-                  <span className="text-gray-600 text-sm font-bold">T</span>
-                </div>
+                              <div className="h-8 w-8 bg-gray-600 rounded flex items-center justify-center">
+                <span className="text-gray-300 text-sm font-bold">T</span>
+              </div>
               )}
 
               {/* TODO: carregar nome do orquestrador via API */}
               <div className="hidden md:block">
-                <span className="text-sm text-gray-600">Orquestrador:</span>
-                <span className="ml-2 font-medium text-gray-900">{orchestratorName}</span>
+                <span className="text-sm text-gray-300">Orquestrador:</span>
+                <span className="ml-2 font-medium text-white">{orchestratorName}</span>
               </div>
             </div>
 
-            {/* TODO: carregar dados do usuário via API */}
+            {/* User Info and Logout */}
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600 hidden md:block">{userName}</span>
+              <span className="text-sm text-gray-300 hidden md:block">{displayName}</span>
+              <NotificationCenter />
+              <ModeToggle />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={signOut}
+                className="flex items-center space-x-2 text-gray-300 hover:text-red-400"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden md:block">Sair</span>
+              </Button>
               <Button variant="ghost" size="sm">
                 <User className="w-5 h-5" />
               </Button>
