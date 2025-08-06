@@ -5,34 +5,34 @@ import { Bot, Sparkles } from 'lucide-react'
 
 export const AuthComponent = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-card to-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-[#00ade8] rounded-2xl flex items-center justify-center shadow-lg">
-              <Bot className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
+              <Bot className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <h2 className="text-4xl font-bold text-white mb-2">
+          <h2 className="text-4xl font-bold text-foreground mb-2">
             n.Gabi
           </h2>
-          <p className="text-lg text-gray-300 mb-1">
+          <p className="text-lg text-muted-foreground mb-1">
             Chat Multi-Agent
           </p>
-          <div className="flex items-center justify-center space-x-2 text-sm text-gray-400">
+          <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
             <Sparkles className="w-4 h-4" />
             <span>Powered by AI</span>
           </div>
         </div>
 
         {/* Auth Form */}
-        <div className="bg-gray-800 rounded-2xl p-8 shadow-2xl border border-gray-700">
+        <div className="bg-card rounded-2xl p-8 shadow-2xl border border-border">
           <div className="text-center mb-6">
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold text-card-foreground mb-2">
               Bem-vindo de volta
             </h3>
-            <p className="text-gray-400">
+            <p className="text-muted-foreground">
               Faça login para acessar a plataforma
             </p>
           </div>

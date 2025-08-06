@@ -26,17 +26,17 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="min-h-screen flex items-center justify-center bg-background">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-white mb-4">
+            <h1 className="text-2xl font-bold text-foreground mb-4">
               Algo deu errado
             </h1>
-            <p className="text-gray-300 mb-4">
+            <p className="text-muted-foreground mb-4">
               {this.state.error?.message || 'Erro desconhecido'}
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-[#00ade8] text-white px-4 py-2 rounded hover:bg-[#0091cc]"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
             >
               Recarregar Página
             </button>
