@@ -28,12 +28,12 @@ export function ChatMessage({
       <div className={`flex ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start space-x-2 max-w-[80%]`}>
         <Avatar className={`h-8 w-8 ${isUser ? 'ml-2' : 'mr-2'}`}>
           <AvatarImage src={isUser ? undefined : undefined} />
-          <AvatarFallback className={isUser ? 'bg-[#00ade8] text-white' : 'bg-gray-700 text-white'}>
+          <AvatarFallback className={isUser ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}>
             {isUser ? 'U' : 'G'}
           </AvatarFallback>
         </Avatar>
         
-        <Card className={`${isUser ? 'bg-[#00ade8] text-white' : 'bg-gray-800'} border-0`}>
+        <Card className={`${isUser ? 'bg-primary text-primary-foreground' : 'bg-card text-card-foreground'} border-0`}>
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-medium opacity-80">

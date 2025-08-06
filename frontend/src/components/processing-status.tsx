@@ -28,15 +28,15 @@ export function ProcessingStatus({
   ];
 
   return (
-    <Card className="mb-4 bg-gray-800 border-[#00ade8]">
+    <Card className="mb-4 bg-card border-primary">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center space-x-2">
+        <CardTitle className="text-sm flex items-center space-x-2 text-card-foreground">
           <Bot className="w-4 h-4" />
           <span>Processando resposta...</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-center justify-between text-xs text-gray-300">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Progresso</span>
           <span>{Math.round(progress)}%</span>
         </div>
@@ -47,7 +47,7 @@ export function ProcessingStatus({
           <Badge variant="outline" className="text-xs">
             Passo {currentStepIndex + 1} de {totalSteps}
           </Badge>
-          <span className="text-xs text-gray-300">
+          <span className="text-xs text-muted-foreground">
             {currentStep}
           </span>
         </div>
@@ -58,8 +58,8 @@ export function ProcessingStatus({
               key={index}
               className={`flex items-center space-x-1 text-xs ${
                 index <= currentStepIndex 
-                  ? 'text-[#00ade8]' 
-                  : 'text-gray-500'
+                  ? 'text-primary' 
+                  : 'text-muted-foreground'
               }`}
             >
               {step.icon}

@@ -95,28 +95,28 @@ export function Dashboard({
   const displayName = userName || user?.email || user?.user_metadata?.full_name || 'Usuário';
 
   return (
-    <div className="h-screen flex bg-gray-900">
+    <div className="h-screen flex bg-background">
       {/* Sidebar */}
-      <div className={`bg-gray-800 border-r border-gray-700 transition-all duration-300 ${
+      <div className={`bg-sidebar border-r border-sidebar-border transition-all duration-300 ${
         sidebarCollapsed ? 'w-16' : 'w-64'
       } ${mobileMenuOpen ? 'fixed inset-y-0 left-0 z-50 w-64' : 'hidden md:block'}`}>
         <div className="flex flex-col h-full">
           {/* Logo/Brand */}
-          <div className="p-4 border-b border-gray-700">
+          <div className="p-4 border-b border-sidebar-border">
             {sidebarCollapsed ? (
               <div className="flex justify-center">
-                <div className="w-10 h-10 bg-[#00ade8] rounded-lg flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-primary-foreground" />
                 </div>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-[#00ade8] rounded-lg flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <span className="font-bold text-white text-lg">n.Gabi</span>
-                  <p className="text-xs text-gray-400">Chat Multi-Agent</p>
+                  <span className="font-bold text-sidebar-foreground text-lg">n.Gabi</span>
+                  <p className="text-xs text-sidebar-accent-foreground">Chat Multi-Agent</p>
                 </div>
               </div>
             )}
@@ -133,8 +133,8 @@ export function Dashboard({
                 }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   currentPage === item.id
-                    ? 'bg-[#00ade8] text-white shadow-lg'
-                    : 'text-gray-200 hover:bg-gray-700 hover:text-white'
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-lg'
+                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                 }`}
                 title={item.description}
               >
@@ -153,26 +153,26 @@ export function Dashboard({
 
           {/* User Info */}
           {!sidebarCollapsed && (
-            <div className="p-4 border-t border-gray-700">
+            <div className="p-4 border-t border-sidebar-border">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-gray-300" />
+                <div className="w-8 h-8 bg-sidebar-accent rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-sidebar-accent-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                  <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                  <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
+                  <p className="text-xs text-sidebar-accent-foreground truncate">{user?.email}</p>
                 </div>
               </div>
             </div>
           )}
 
           {/* Collapse Toggle */}
-          <div className="p-4 border-t border-gray-700">
+          <div className="p-4 border-t border-sidebar-border">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="w-full text-gray-300 hover:text-white"
+              className="w-full text-sidebar-foreground hover:text-sidebar-accent-foreground"
               title={sidebarCollapsed ? "Expandir menu" : "Recolher menu"}
             >
               {sidebarCollapsed ? (
