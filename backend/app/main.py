@@ -15,7 +15,7 @@ from app.middleware.rate_limit_middleware import (
     LoggingMiddleware,
     MetricsMiddleware
 )
-from app.routers import chat, auth, events, webhooks
+from app.routers import chat, auth, events, webhooks, agents
 from app.database import get_supabase, check_database_health
 from app.core.config import settings
 
@@ -196,6 +196,9 @@ app.include_router(auth.router, prefix="/api/v1")
 
 # Chat (Foco Principal - Lógica de IA)
 app.include_router(chat.router, prefix="/api/v1")
+
+# Agentes (CRUD Completo)
+app.include_router(agents.router, prefix="/api/v1")
 
 # Eventos (Complementar)
 if settings.events_enabled:

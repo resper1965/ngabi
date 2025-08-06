@@ -13,6 +13,7 @@ from app.database import get_supabase, get_current_user, get_agent_by_id, save_c
 from app.core.rate_limiting import rate_limit_by_user
 from app.core.cache import get_cached_response, set_cached_response
 from app.core.events import event_system, EventType
+from app.core.llm_service import llm_service
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage
 from app.core.config import settings
 
@@ -112,13 +113,67 @@ async def stream_chat_message(
         if not agent:
             raise HTTPException(status_code=404, detail="Agente não encontrado")
         
-        # Implementar streaming de IA
-        # TODO: Implementar streaming real com OpenAI ou similar
-        return {
-            "message": "Streaming implementado",
-            "agent": agent['name'],
-            "mode": request.chat_mode
-        }
+        # Obter configurações do agente
+        system_prompt = agent.get('system_prompt', '')
+        model = agent.get('model', settings.default_chat_model)
+        temperature = agent.get('temperature', settings.temperature)
+        max_tokens = agent.get('max_tokens', settings.max_tokens)
+        
+        # Obter histórico de chat se necessário
+        chat_history = None
+        if request.chat_mode == "conversation":
+            # TODO: Implementar busca de histórico
+            chat_history = []
+        
+        # Streaming com OpenAI
+        from fastapi.responses import StreamingResponse
+        import json
+        
+        async def generate_stream():
+            try:
+                async for chunk in llm_service.process_chat_stream(
+                    message=request.message,
+                    system_prompt=system_prompt,
+                    chat_history=chat_history,
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                ):
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+                
+                # Salvar no histórico (background)
+                full_response = ""  # TODO: Capturar resposta completa
+                await save_chat_message(
+                    user_id=user.id,
+                    agent_id=str(request.agent_id),
+                    message=request.message,
+                    response=full_response,
+                    chat_mode=request.chat_mode
+                )
+                
+                # Emitir evento
+                await event_system.emit(EventType.CHAT_MESSAGE, {
+                    "user_id": user.id,
+                    "agent_id": str(request.agent_id),
+                    "message": request.message,
+                    "response": full_response,
+                    "chat_mode": request.chat_mode,
+                    "streaming": True
+                })
+                
+            except Exception as e:
+                logger.error(f"❌ Erro no streaming: {e}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream"
+            }
+        )
         
     except Exception as e:
         logger.error(f"❌ Erro no streaming: {e}")
@@ -212,7 +267,7 @@ async def create_agent(agent_data: Dict[str, Any]):
 
 async def _process_ai_message(request: ChatRequest, agent: Dict[str, Any]) -> str:
     """
-    Processar mensagem com IA - foco principal do n.Gabi.
+    Processar mensagem com IA usando OpenAI - foco principal do n.Gabi.
     """
     try:
         # Obter configurações do agente
@@ -221,20 +276,21 @@ async def _process_ai_message(request: ChatRequest, agent: Dict[str, Any]) -> st
         temperature = agent.get('temperature', settings.temperature)
         max_tokens = agent.get('max_tokens', settings.max_tokens)
         
-        # Preparar contexto
-        context = {
-            "message": request.message,
-            "chat_mode": request.chat_mode,
-            "system_prompt": system_prompt,
-            "model": model,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "kb_filters": request.kb_filters or []
-        }
+        # Obter histórico de chat se necessário
+        chat_history = None
+        if request.chat_mode == "conversation":
+            # TODO: Implementar busca de histórico
+            chat_history = []
         
-        # TODO: Implementar chamada real para IA
-        # Por enquanto, simular resposta
-        ai_response = f"Resposta do agente {agent['name']} (modo {request.chat_mode}): {request.message}"
+        # Processar com OpenAI
+        ai_response = await llm_service.process_chat_message(
+            message=request.message,
+            system_prompt=system_prompt,
+            chat_history=chat_history,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens
+        )
         
         logger.info(f"🤖 IA processada: {agent['name']} -> {len(ai_response)} chars")
         return ai_response

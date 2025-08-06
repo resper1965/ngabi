@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     # =============================================================================
     # SECURITY CONFIGURATION
     # =============================================================================
-    jwt_secret_key: str = Field(..., env="JWT_SECRET_KEY")
+    jwt_secret_key: Optional[str] = Field(None, env="JWT_SECRET")
     
     # =============================================================================
     # LOGGING CONFIGURATION
