@@ -82,5 +82,5 @@ services:
     depends_on:
       - frontend
       - backend
-    networks:
+networks:
       - app-network 

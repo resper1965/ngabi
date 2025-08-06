@@ -1,4 +1,3 @@
-import React from 'react';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';

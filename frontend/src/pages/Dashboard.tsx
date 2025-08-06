@@ -186,7 +186,7 @@ export function Dashboard({
               ) : (
                               <div className="h-8 w-8 bg-gray-600 rounded flex items-center justify-center">
                 <span className="text-gray-300 text-sm font-bold">T</span>
-              </div>
+                </div>
               )}
 
               {/* TODO: carregar nome do orquestrador via API */}
