@@ -5,7 +5,6 @@ import { AuthComponent } from './components/Auth'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { LoadingScreen } from './components/LoadingScreen'
 import { setupErrorHandling } from './utils/debug'
-import { TestComponent } from './components/TestComponent'
 import { Dashboard } from './pages/Dashboard'
 import { ChatPage } from './pages/ChatPage'
 import { TenantsPage } from './pages/TenantsPage'
@@ -27,8 +26,6 @@ interface KnowledgeBase {
   name: string;
   selected: boolean;
 }
-
-
 
 // Componente para o layout do Dashboard com rotas aninhadas
 function DashboardLayout() {
@@ -122,8 +119,17 @@ function DashboardLayout() {
 }
 
 function AppContent() {
-  // Temporariamente retornar apenas o TestComponent
-  return <TestComponent />;
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!session) {
+    return <AuthComponent />;
+  }
+
+  return <DashboardLayout />;
 }
 
 function App() {
