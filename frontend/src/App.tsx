@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { AuthComponent } from './components/Auth'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { LoadingScreen } from './components/LoadingScreen'
@@ -140,13 +141,13 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <Router>
-          <div className="dark">
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
             <AppContent />
-          </div>
-        </Router>
-      </AuthProvider>
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }
