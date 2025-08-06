@@ -13,6 +13,7 @@ import { UsersPage } from './pages/UsersPage'
 import { BrandingPage } from './pages/BrandingPage'
 import { SettingsPage } from './pages/SettingsPage'
 import EvolutionPage from './pages/EvolutionPage'
+import { ThemeTest } from './components/ThemeTest'
 import './App.css'
 
 interface Message {
@@ -114,6 +115,7 @@ function DashboardLayout() {
         <Route path="/branding" element={<BrandingPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/evolution" element={<EvolutionPage />} />
+        <Route path="/theme-test" element={<ThemeTest />} />
       </Routes>
     </Dashboard>
   );
