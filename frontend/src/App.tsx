@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { AuthComponent } from './components/Auth'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { LoadingScreen } from './components/LoadingScreen'
+import { setupErrorHandling } from './utils/debug'
+import { TestComponent } from './components/TestComponent'
 import { Dashboard } from './pages/Dashboard'
 import { ChatPage } from './pages/ChatPage'
 import { TenantsPage } from './pages/TenantsPage'
@@ -118,56 +122,26 @@ function DashboardLayout() {
 }
 
 function AppContent() {
-  const { session, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <Router>
-      <Routes>
-        <Route 
-          path="/login" 
-          element={
-            session ? (
-              <Navigate to="/" replace />
-            ) : (
-              <AuthComponent />
-            )
-          } 
-        />
-        <Route 
-          path="/*" 
-          element={
-            session ? (
-              <DashboardLayout />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          } 
-        />
-      </Routes>
-    </Router>
-  );
+  // Temporariamente retornar apenas o TestComponent
+  return <TestComponent />;
 }
 
 function App() {
+  // Configurar debug em desenvolvimento
+  if (import.meta.env.DEV) {
+    setupErrorHandling()
+  }
+
   return (
-    <AuthProvider>
-      <Router>
-        <div className="dark">
-          <AppContent />
-        </div>
-      </Router>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="dark">
+            <AppContent />
+          </div>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

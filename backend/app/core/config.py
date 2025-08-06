@@ -62,9 +62,35 @@ class Settings(BaseSettings):
     # =============================================================================
     jwt_secret_key: str = Field(..., env="JWT_SECRET_KEY")
     
+    # =============================================================================
+    # LOGGING CONFIGURATION
+    # =============================================================================
+    log_level: str = Field(default="INFO", env="LOG_LEVEL")
+    log_format: str = Field(default="json", env="LOG_FORMAT")
+    
+    # =============================================================================
+    # CHAT RATE LIMITING
+    # =============================================================================
+    chat_rate_limit: str = Field(default="10/minute", env="CHAT_RATE_LIMIT")
+    
+    # =============================================================================
+    # ADDITIONAL CONFIGURATION (Fallback)
+    # =============================================================================
+    environment: str = Field(default="production", env="ENVIRONMENT")
+    secrets_provider: str = Field(default="vault", env="SECRETS_PROVIDER")
+    vault_url: Optional[str] = Field(None, env="VAULT_URL")
+    vault_token: Optional[str] = Field(None, env="VAULT_TOKEN")
+    aws_region: Optional[str] = Field(None, env="AWS_REGION")
+    aws_access_key_id: Optional[str] = Field(None, env="AWS_ACCESS_KEY_ID")
+    aws_secret_access_key: Optional[str] = Field(None, env="AWS_SECRET_ACCESS_KEY")
+    openai_api_key: Optional[str] = Field(None, env="OPENAI_API_KEY")
+    pinecone_api_key: Optional[str] = Field(None, env="PINECONE_API_KEY")
+    jwt_secret: Optional[str] = Field(None, env="JWT_SECRET")
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignorar variáveis extras
 
 # Instância global das configurações
 settings = Settings() 

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ngabi-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    networks:
+      - ngabi-network
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: ngabi-backend
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+    env_file:
+      - ../backend/.env
+    ports:
+      - "8000:8000"
+    networks:
+      - ngabi-network
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: ngabi-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - ngabi-network
+
+networks:
+  ngabi-network:
+    driver: bridge 
