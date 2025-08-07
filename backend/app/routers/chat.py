@@ -13,7 +13,7 @@ from app.database import get_supabase, get_current_user, get_agent_by_id, save_c
 from app.core.rate_limiting import rate_limit_by_user
 from app.core.cache import get_cached_response, set_cached_response
 from app.core.events import event_system, EventType
-from app.core.llm_service import llm_service
+from app.core.llm_service import get_llm_service
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage
 from app.core.config import settings
 
@@ -131,6 +131,7 @@ async def stream_chat_message(
         
         async def generate_stream():
             try:
+                llm_service = get_llm_service()
                 async for chunk in llm_service.process_chat_stream(
                     message=request.message,
                     system_prompt=system_prompt,
@@ -283,7 +284,7 @@ async def _process_ai_message(request: ChatRequest, agent: Dict[str, Any]) -> st
             chat_history = []
         
         # Processar com OpenAI
-        ai_response = await llm_service.process_chat_message(
+        ai_response = await get_llm_service().process_chat_message(
             message=request.message,
             system_prompt=system_prompt,
             chat_history=chat_history,

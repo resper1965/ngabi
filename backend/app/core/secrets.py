@@ -163,10 +163,15 @@ class AWSSecretsManager(SecretsManager):
     
     def __init__(self, region_name: str = "us-east-1"):
         if not BOTO3_AVAILABLE:
+            logger.warning("boto3 não está instalado. AWS Secrets Manager não estará disponível.")
             raise ImportError("boto3 não está instalado. Execute: pip install boto3")
         
-        self.client = boto3.client('secretsmanager', region_name=region_name)
-        self._validate_connection()
+        try:
+            self.client = boto3.client('secretsmanager', region_name=region_name)
+            self._validate_connection()
+        except Exception as e:
+            logger.error(f"Erro ao inicializar AWS Secrets Manager: {e}")
+            raise
     
     def _validate_connection(self):
         """Valida conexão com AWS Secrets Manager."""
@@ -231,11 +236,19 @@ class SecretsService:
                     logger.warning("VAULT_TOKEN não configurado, usando variáveis de ambiente")
                     return EnvSecretsManager()
                 
-                return VaultSecretsManager(vault_url, vault_token)
+                try:
+                    return VaultSecretsManager(vault_url, vault_token)
+                except Exception as e:
+                    logger.warning(f"Erro ao conectar ao Vault: {e}, usando variáveis de ambiente")
+                    return EnvSecretsManager()
             
             elif secrets_provider == 'aws':
                 region_name = os.getenv('AWS_REGION', 'us-east-1')
-                return AWSSecretsManager(region_name)
+                try:
+                    return AWSSecretsManager(region_name)
+                except Exception as e:
+                    logger.warning(f"Erro ao conectar ao AWS Secrets Manager: {e}, usando variáveis de ambiente")
+                    return EnvSecretsManager()
             
             elif secrets_provider == 'env':
                 return EnvSecretsManager()
@@ -325,8 +338,15 @@ class SecretsService:
         
         return secrets
 
-# Instância global do serviço de secrets
-secrets_service = SecretsService()
+# Função para obter instância do serviço de secrets (lazy loading)
+_secrets_service_instance = None
+
+def get_secrets_service() -> SecretsService:
+    """Retorna a instância do SecretsService (singleton)."""
+    global _secrets_service_instance
+    if _secrets_service_instance is None:
+        _secrets_service_instance = SecretsService()
+    return _secrets_service_instance
 
 # Funções de conveniência para cache
 def get_cached_response(tenant_id: str, agent_id: str, query: str) -> Optional[Dict[str, Any]]:

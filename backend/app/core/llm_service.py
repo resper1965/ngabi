@@ -5,13 +5,13 @@ Integração com OpenAI API para processamento de chat
 
 import asyncio
 import logging
+import os
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 import openai
 from openai import AsyncOpenAI
 
 from app.core.config import settings
-from app.core.secrets import SecretsService
 from app.core.cache import get_cached_response, set_cached_response
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,6 @@ class LLMService:
     """Service para integração com OpenAI e outros LLMs."""
     
     def __init__(self):
-        self.secrets_service = SecretsService()
         self.client = None
         self._initialize_client()
     
@@ -40,20 +39,20 @@ class LLMService:
             self.client = None
     
     def _get_openai_api_key(self) -> Optional[str]:
-        """Recupera a chave da API OpenAI."""
-        # Primeiro tenta via secrets service
-        try:
-            api_key = self.secrets_service.get_openai_api_key()
-            if api_key:
-                return api_key
-        except Exception as e:
-            logger.warning(f"⚠️ Erro ao obter API key via secrets: {e}")
-        
-        # Fallback para variável de ambiente
-        api_key = settings.openai_api_key
+        """Recupera a chave da API OpenAI diretamente do .env."""
+        # Usar diretamente variável de ambiente
+        api_key = os.getenv('OPENAI_API_KEY')
         if api_key:
+            logger.info("✅ OpenAI API key obtida do .env")
             return api_key
         
+        # Fallback para settings
+        api_key = settings.openai_api_key
+        if api_key:
+            logger.info("✅ OpenAI API key obtida das settings")
+            return api_key
+        
+        logger.warning("⚠️ OpenAI API key não encontrada")
         return None
     
     async def process_chat_message(
@@ -227,5 +226,12 @@ class LLMService:
             logger.error(f"❌ Teste de conexão falhou: {e}")
             return False
 
-# Instância global do service
-llm_service = LLMService() 
+# Função para obter instância do service (lazy loading)
+_llm_service_instance = None
+
+def get_llm_service() -> LLMService:
+    """Retorna a instância do LLMService (singleton)."""
+    global _llm_service_instance
+    if _llm_service_instance is None:
+        _llm_service_instance = LLMService()
+    return _llm_service_instance 

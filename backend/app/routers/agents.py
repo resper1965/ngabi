@@ -900,7 +900,7 @@ async def test_agent(agent_id: str, test_message: str, tenant_id: str = None):
             logger.info(f"✅ Agente especialista testado com LangChain: {agent_id}")
         else:
             # Usar LLMService para agentes básicos
-            from app.core.llm_service import llm_service
+            from app.core.llm_service import get_llm_service
             
             ai_response = await llm_service.process_chat_message(
                 message=test_message,
