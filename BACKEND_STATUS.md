@@ -70,7 +70,7 @@
 
 ```bash
 # OpenAI API Key
-OPENAI_API_KEY=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
+OPENAI_API_KEY=your-openai-api-key
 
 # Supabase
 SUPABASE_URL=https://hyeifxvxifhrapfdvfry.supabase.co
@@ -197,7 +197,7 @@ nano backend/.env
 ### **2. Produção:**
 ```bash
 # Variáveis obrigatórias
-OPENAI_API_KEY=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
+OPENAI_API_KEY=your-openai-api-key
 SUPABASE_URL=https://hyeifxvxifhrapfdvfry.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_RMMpXpKBjUDFNQt9_X0aog_GzLv4jzd
 JWT_SECRET=super-secret-jwt-key-for-chat-app-2024
@@ -209,7 +209,7 @@ DEBUG=false
 ### **3. Docker:**
 ```yaml
 environment:
-  - OPENAI_API_KEY=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
+  - OPENAI_API_KEY=your-openai-api-key
   - SUPABASE_URL=https://hyeifxvxifhrapfdvfry.supabase.co
   - SUPABASE_ANON_KEY=sb_publishable_RMMpXpKBjUDFNQt9_X0aog_GzLv4jzd
   - JWT_SECRET=super-secret-jwt-key-for-chat-app-2024

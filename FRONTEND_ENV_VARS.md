@@ -23,7 +23,7 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_RMMpXpKBjUDFNQt9_X0aog_GzLv4jzd
 ### **🤖 OpenAI (Obrigatório para Chat):**
 ```bash
 # OpenAI API Key
-VITE_OPENAI_API_KEY=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
+VITE_OPENAI_API_KEY=your-openai-api-key
 
 # Modelo OpenAI padrão
 VITE_OPENAI_MODEL=gpt-3.5-turbo
@@ -190,7 +190,7 @@ VITE_SUPABASE_URL=https://hyeifxvxifhrapfdvfry.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_RMMpXpKBjUDFNQt9_X0aog_GzLv4jzd
 
 # OPENAI CONFIGURAÇÃO
-VITE_OPENAI_API_KEY=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
+VITE_OPENAI_API_KEY=your-openai-api-key
 VITE_OPENAI_MODEL=gpt-3.5-turbo
 VITE_OPENAI_TEMPERATURE=0.7
 VITE_OPENAI_MAX_TOKENS=2048

@@ -114,12 +114,12 @@ const response = await apiService.sendChatMessage({
 VITE_API_BASE_URL=http://localhost:8000
 VITE_SUPABASE_URL=https://hyeifxvxifhrapfdvfry.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_RMMpXpKBjUDFNQt9_X0aog_GzLv4jzd
-VITE_OPENAI_API_KEY=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
+VITE_OPENAI_API_KEY=your-openai-api-key
 ```
 
 ### **Backend (.env):**
 ```bash
-OPENAI_API_KEY=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
+OPENAI_API_KEY=your-openai-api-key
 SUPABASE_URL=https://hyeifxvxifhrapfdvfry.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_RMMpXpKBjUDFNQt9_X0aog_GzLv4jzd
 JWT_SECRET=super-secret-jwt-key-for-chat-app-2024
