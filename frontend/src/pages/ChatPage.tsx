@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ChatMessage } from '../components/chat-message'
 import { ProcessingStatus } from '../components/processing-status'
 import { Send, Settings, MessageSquare, Bot, Sparkles } from 'lucide-react'
+import { apiService, type ChatMessage as ApiChatMessage, type Agent } from '../services/api'
 
 interface Message {
   id: string

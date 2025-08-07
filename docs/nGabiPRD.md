@@ -90,7 +90,7 @@ ngabi/
 - Gerenciamento de sessões
 - Validação de tokens JWT
 
-#### **Evolution Module** (`/api/v1/evolution`)
+
 - Sistema de evolução de agentes
 - Aprendizado contínuo
 - Otimização de prompts
@@ -123,7 +123,7 @@ ngabi/
 - **Users** (`/users`) - Gerenciamento de usuários
 - **Branding** (`/branding`) - Personalização visual
 - **Settings** (`/settings`) - Configurações do sistema
-- **Evolution** (`/evolution`) - Sistema de evolução de agentes
+
 
 ### Papéis de Usuário
 - **Admin**: Acesso completo ao sistema

@@ -38,6 +38,59 @@ class SecretsManager(ABC):
         """Recupera múltiplos secrets."""
         pass
 
+class EnvSecretsManager(SecretsManager):
+    """Implementação para variáveis de ambiente."""
+    
+    def __init__(self):
+        logger.info("✅ Usando variáveis de ambiente para secrets")
+    
+    def get_secret(self, secret_name: str) -> Optional[str]:
+        """Recupera um secret das variáveis de ambiente."""
+        try:
+            # Mapear nomes de secrets para variáveis de ambiente
+            env_mapping = {
+                'openai-api-key': 'OPENAI_API_KEY',
+                'pinecone-api-key': 'PINECONE_API_KEY',
+                'jwt-secret': 'JWT_SECRET_KEY',
+                'supabase-url': 'SUPABASE_URL',
+                'supabase-anon-key': 'SUPABASE_ANON_KEY',
+                'supabase-service-role-key': 'SUPABASE_SERVICE_ROLE_KEY',
+                'redis-url': 'REDIS_URL',
+                'redis-host': 'REDIS_HOST',
+                'redis-port': 'REDIS_PORT',
+                'redis-password': 'REDIS_PASSWORD',
+                'redis-username': 'REDIS_USERNAME'
+            }
+            
+            env_var = env_mapping.get(secret_name, secret_name.upper().replace('-', '_'))
+            secret_value = os.getenv(env_var)
+            
+            if secret_value:
+                logger.info(f"🎯 Secret recuperado das variáveis de ambiente: {secret_name}")
+                return secret_value
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Erro ao recuperar secret {secret_name} das variáveis de ambiente: {e}")
+            return None
+    
+    def get_secrets(self, secret_names: list) -> Dict[str, str]:
+        """Recupera múltiplos secrets das variáveis de ambiente."""
+        secrets = {}
+        
+        try:
+            for secret_name in secret_names:
+                secret_value = self.get_secret(secret_name)
+                if secret_value:
+                    secrets[secret_name] = secret_value
+            
+            return secrets
+            
+        except Exception as e:
+            logger.error(f"Erro ao recuperar secrets das variáveis de ambiente: {e}")
+            return secrets
+
 class VaultSecretsManager(SecretsManager):
     """Implementação para HashiCorp Vault."""
     
@@ -167,23 +220,33 @@ class SecretsService:
     
     def _initialize_secrets_manager(self) -> SecretsManager:
         """Inicializa o gerenciador de secrets apropriado."""
-        secrets_provider = os.getenv('SECRETS_PROVIDER', 'vault').lower()
+        secrets_provider = os.getenv('SECRETS_PROVIDER', 'env').lower()
         
-        if secrets_provider == 'vault':
-            vault_url = os.getenv('VAULT_URL', 'http://localhost:8200')
-            vault_token = os.getenv('VAULT_TOKEN')
+        try:
+            if secrets_provider == 'vault':
+                vault_url = os.getenv('VAULT_URL', 'http://localhost:8200')
+                vault_token = os.getenv('VAULT_TOKEN')
+                
+                if not vault_token:
+                    logger.warning("VAULT_TOKEN não configurado, usando variáveis de ambiente")
+                    return EnvSecretsManager()
+                
+                return VaultSecretsManager(vault_url, vault_token)
             
-            if not vault_token:
-                raise ValueError("VAULT_TOKEN é obrigatório para usar HashiCorp Vault")
+            elif secrets_provider == 'aws':
+                region_name = os.getenv('AWS_REGION', 'us-east-1')
+                return AWSSecretsManager(region_name)
             
-            return VaultSecretsManager(vault_url, vault_token)
-        
-        elif secrets_provider == 'aws':
-            region_name = os.getenv('AWS_REGION', 'us-east-1')
-            return AWSSecretsManager(region_name)
-        
-        else:
-            raise ValueError(f"Provedor de secrets não suportado: {secrets_provider}")
+            elif secrets_provider == 'env':
+                return EnvSecretsManager()
+            
+            else:
+                logger.warning(f"Provedor de secrets não suportado: {secrets_provider}, usando variáveis de ambiente")
+                return EnvSecretsManager()
+                
+        except Exception as e:
+            logger.warning(f"Erro ao inicializar secrets manager: {e}, usando variáveis de ambiente")
+            return EnvSecretsManager()
     
     def get_openai_api_key(self) -> Optional[str]:
         """Recupera a chave da API OpenAI."""
@@ -192,13 +255,11 @@ class SecretsService:
         if cache_key in self._cache:
             return self._cache[cache_key]
         
-        if isinstance(self.secrets_manager, VaultSecretsManager):
-            secret = self.secrets_manager.get_secret('secrets')
-            if secret:
-                self._cache[cache_key] = secret
-                return secret
-        else:
-            secret = self.secrets_manager.get_secret('chat-app/openai-api-key')
+        # Tentar diferentes nomes de secrets
+        secret_names = ['openai-api-key', 'OPENAI_API_KEY', 'openai_api_key']
+        
+        for secret_name in secret_names:
+            secret = self.secrets_manager.get_secret(secret_name)
             if secret:
                 self._cache[cache_key] = secret
                 return secret
@@ -212,13 +273,11 @@ class SecretsService:
         if cache_key in self._cache:
             return self._cache[cache_key]
         
-        if isinstance(self.secrets_manager, VaultSecretsManager):
-            secret = self.secrets_manager.get_secret('secrets')
-            if secret:
-                self._cache[cache_key] = secret
-                return secret
-        else:
-            secret = self.secrets_manager.get_secret('chat-app/pinecone-api-key')
+        # Tentar diferentes nomes de secrets
+        secret_names = ['pinecone-api-key', 'PINECONE_API_KEY', 'pinecone_api_key']
+        
+        for secret_name in secret_names:
+            secret = self.secrets_manager.get_secret(secret_name)
             if secret:
                 self._cache[cache_key] = secret
                 return secret
@@ -232,13 +291,11 @@ class SecretsService:
         if cache_key in self._cache:
             return self._cache[cache_key]
         
-        if isinstance(self.secrets_manager, VaultSecretsManager):
-            secret = self.secrets_manager.get_secret('secrets')
-            if secret:
-                self._cache[cache_key] = secret
-                return secret
-        else:
-            secret = self.secrets_manager.get_secret('chat-app/jwt-secret')
+        # Tentar diferentes nomes de secrets
+        secret_names = ['jwt-secret', 'JWT_SECRET_KEY', 'jwt_secret_key']
+        
+        for secret_name in secret_names:
+            secret = self.secrets_manager.get_secret(secret_name)
             if secret:
                 self._cache[cache_key] = secret
                 return secret
@@ -264,17 +321,18 @@ class SecretsService:
         
         jwt_secret = self.get_jwt_secret()
         if jwt_secret:
-            secrets['JWT_SECRET'] = jwt_secret
+            secrets['JWT_SECRET_KEY'] = jwt_secret
         
         return secrets
 
 # Instância global do serviço de secrets
 secrets_service = SecretsService()
 
-# Funções utilitárias para uso direto
+# Funções de conveniência para cache
 def get_cached_response(tenant_id: str, agent_id: str, query: str) -> Optional[Dict[str, Any]]:
-    """Função utilitária para buscar resposta cacheada."""
-    return secrets_service.get_cached_response(tenant_id, agent_id, query)
+    """Função de conveniência para buscar cache."""
+    from app.core.cache import cache_service
+    return cache_service.get_cached_response(tenant_id, agent_id, query)
 
 def set_cached_response(
     tenant_id: str,
@@ -283,17 +341,21 @@ def set_cached_response(
     response: Dict[str, Any],
     ttl: Optional[int] = None
 ) -> bool:
-    """Função utilitária para salvar resposta no cache."""
-    return secrets_service.set_cached_response(tenant_id, agent_id, query, response, ttl)
+    """Função de conveniência para salvar cache."""
+    from app.core.cache import cache_service
+    return cache_service.set_cached_response(tenant_id, agent_id, query, response, ttl)
 
 def clear_tenant_cache(tenant_id: str) -> int:
-    """Função utilitária para limpar cache de um tenant."""
-    return secrets_service.clear_tenant_cache(tenant_id)
+    """Função de conveniência para limpar cache do tenant."""
+    from app.core.cache import cache_service
+    return cache_service.clear_tenant_cache(tenant_id)
 
 def get_cache_stats(tenant_id: Optional[str] = None) -> Dict[str, Any]:
-    """Função utilitária para obter estatísticas do cache."""
-    return secrets_service.get_cache_stats(tenant_id)
+    """Função de conveniência para estatísticas de cache."""
+    from app.core.cache import cache_service
+    return cache_service.get_cache_stats(tenant_id)
 
 def cache_health_check() -> Dict[str, Any]:
-    """Função utilitária para verificar saúde do cache."""
-    return secrets_service.cache_health_check() 
+    """Função de conveniência para health check do cache."""
+    from app.core.cache import cache_service
+    return cache_service.health_check() 

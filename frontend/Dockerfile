@@ -1,31 +1,49 @@
-FROM node:22-alpine
+# Dockerfile para Frontend n.Gabi
+FROM node:18-alpine
 
+# Definir variáveis de ambiente
+ENV NODE_ENV=production
+ENV NPM_CONFIG_LOGLEVEL=warn
+
+# Instalar dependências do sistema
+RUN apk add --no-cache \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Definir diretório de trabalho
 WORKDIR /app
 
-# Criar usuário não-root
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-
-# Copiar package files primeiro para cache de dependências
+# Copiar package.json e package-lock.json
 COPY package*.json ./
 
-# Instalar todas as dependências (incluindo devDependencies)
-RUN npm ci && npm cache clean --force
+# Instalar dependências
+RUN npm ci --only=production && npm cache clean --force
 
 # Copiar código da aplicação
 COPY . .
 
-# Garantir permissões de escrita para o usuário
-RUN mkdir -p /app/.vite && chown -R nextjs:nodejs /app/.vite
+# Build da aplicação
+RUN npm run build
 
-# Mudar propriedade para usuário não-root
+# Instalar serve para produção
+RUN npm install -g serve
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+# Mudar propriedade dos arquivos
 RUN chown -R nextjs:nodejs /app
 
+# Mudar para usuário não-root
+USER nextjs
+
+# Expor porta
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
 
-# Comando para iniciar a aplicação em modo de produção
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000", "--mode", "production"] 
+# Comando para executar a aplicação
+CMD ["serve", "-s", "dist", "-l", "3000"] 

@@ -200,6 +200,8 @@ app.include_router(chat.router, prefix="/api/v1")
 # Agentes (CRUD Completo)
 app.include_router(agents.router, prefix="/api/v1")
 
+
+
 # Eventos (Complementar)
 if settings.events_enabled:
     app.include_router(events.router, prefix="/api/v1")

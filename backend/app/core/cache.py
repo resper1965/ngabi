@@ -24,18 +24,20 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 class CacheConfig:
-    """Configuração do cache Redis."""
+    """Configuração do cache Redis (EasyUIPanel)."""
     
     def __init__(
         self,
-        redis_url: str = "redis://localhost:6379/0",
+        redis_url: str = None,
         default_ttl: int = 3600,  # 1 hora em segundos
         max_ttl: int = 86400,     # 24 horas em segundos
         min_ttl: int = 60,        # 1 minuto em segundos
         cache_enabled: bool = True,
         cache_prefix: str = "chat_cache"
     ):
-        self.redis_url = redis_url
+        # Usar variável de ambiente ou fallback para localhost
+        import os
+        self.redis_url = redis_url or os.getenv('REDIS_URL', 'redis://localhost:6379')
         self.default_ttl = default_ttl
         self.max_ttl = max_ttl
         self.min_ttl = min_ttl
@@ -64,7 +66,8 @@ class RedisCache:
             self.redis_client.ping()
             logger.info(f"✅ Conectado ao Redis: {self.config.redis_url}")
         except Exception as e:
-            logger.error(f"❌ Erro ao conectar ao Redis: {e}")
+            logger.warning(f"⚠️ Erro ao conectar ao Redis: {e}")
+            logger.info("🔄 Cache será desabilitado - aplicação continuará funcionando")
             self.redis_client = None
     
     def _generate_cache_key(self, tenant_id: str, agent_id: str, query: str) -> str:
@@ -124,7 +127,7 @@ class RedisCache:
             return None
             
         except Exception as e:
-            logger.error(f"Erro ao buscar cache: {e}")
+            logger.warning(f"Erro ao buscar cache (continuando sem cache): {e}")
             return None
     
     def set_cached_response(
@@ -180,7 +183,7 @@ class RedisCache:
             return True
             
         except Exception as e:
-            logger.error(f"Erro ao salvar cache: {e}")
+            logger.warning(f"Erro ao salvar cache (continuando sem cache): {e}")
             return False
     
     def delete_cached_response(
@@ -213,7 +216,7 @@ class RedisCache:
             return bool(result)
             
         except Exception as e:
-            logger.error(f"Erro ao remover cache: {e}")
+            logger.warning(f"Erro ao remover cache (continuando sem cache): {e}")
             return False
     
     def clear_tenant_cache(self, tenant_id: str) -> int:
@@ -241,7 +244,7 @@ class RedisCache:
             return 0
             
         except Exception as e:
-            logger.error(f"Erro ao limpar cache do tenant: {e}")
+            logger.warning(f"Erro ao limpar cache do tenant (continuando sem cache): {e}")
             return 0
     
     def get_cache_stats(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:

@@ -7,7 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { LoadingScreen } from './components/LoadingScreen'
 import { setupErrorHandling } from './utils/debug'
 import { Dashboard } from './pages/Dashboard'
-import { ChatPage } from './pages/ChatPage'
+import { ChatInterface } from './components/ChatInterface'
 import { TenantsPage } from './pages/TenantsPage'
 import { UsersPage } from './pages/UsersPage'
 import { BrandingPage } from './pages/BrandingPage'
@@ -92,24 +92,8 @@ function DashboardLayout() {
       userName="Admin"
     >
       <Routes>
-        <Route path="/" element={
-          <ChatPage
-            agentName="n.Gabi"
-            onSendMessage={handleSendMessage}
-            messages={messages}
-            knowledgeBases={mockKnowledgeBases}
-            isLoading={isLoading}
-          />
-        } />
-        <Route path="/chat" element={
-          <ChatPage
-            agentName="n.Gabi"
-            onSendMessage={handleSendMessage}
-            messages={messages}
-            knowledgeBases={mockKnowledgeBases}
-            isLoading={isLoading}
-          />
-        } />
+        <Route path="/" element={<ChatInterface />} />
+        <Route path="/chat" element={<ChatInterface />} />
         <Route path="/tenants" element={<TenantsPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/branding" element={<BrandingPage />} />
