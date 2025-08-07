@@ -20,7 +20,7 @@ git rm --cached REMOVER_SECRETS.md 2>/dev/null || true
 
 # Substituir secrets nos arquivos restantes
 echo "🔧 Substituindo secrets..."
-find . -name "*.md" -exec sed -i 's/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/your-openai-api-key/g' {} \; 2>/dev/null || true
+find . -name "*.md" -exec sed -i 's/your-openai-api-key/your-openai-api-key/g' {} \; 2>/dev/null || true
 
 # =============================================================================
 # 2. BUILD DO PROJETO
