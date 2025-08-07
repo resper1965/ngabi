@@ -57,3 +57,59 @@ venv.bak/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# =============================================================================
+# SECURITY - ARQUIVOS COM SECRETS
+# =============================================================================
+
+# Documentação com secrets expostos
+BACKEND_STATUS.md
+FRONTEND_ENV_VARS.md
+FRONTEND_BACKEND_CONNECTION.md
+BACKEND_ENV_VARS.md
+EASYUI_ENV_VARS.md
+CORRIGIR_SECRETS_URGENTE.md
+REMOVER_SECRETS.md
+
+# Arquivos de exemplo com secrets
+frontend/env.example
+backend/env.example
+
+# Scripts com secrets
+scripts/*.sh
+setup-supabase.sh
+build-production.sh
+
+# Documentação com credenciais
+*.md
+!README.md
+!BMAD.md
+!LANGCHAIN_INTEGRATION_STRATEGY.md
+!LANGCHAIN_IMPLEMENTATION.md
+!VOICE_STYLE_BASE_IMPLEMENTATION.md
+!AGENTES_ESPECIALISTAS.md
+!BACKEND_REST_MODULES.md
+!EASYFORM_DEPLOY.md
+!DEPLOY_HOMOLOGACAO.md
+!CHECKLIST_DEPLOY_HOMOLOGACAO.md
+!COMMIT_SUMMARY.md
+!SOLUCAO_MAIN_BRANCH.md
+!RESOLVER_PUSH_REJEITADO.md
+!CORRECOES_VPS.md
+!CORRECOES_CONTRASTE.md
+!REVISAO_COMPLETA.md
+!CORRECOES_TEMA.md
+!STATUS_TEMA.md
+!DEPLOY_FINAL.md
+!DOCKERFILES_E_DEPLOY.md
+!TEMA_IMPLEMENTADO.md
+!DEPLOY_STATUS.md
+!IMPLEMENTACAO_PRIORIDADES_ALTAS.md
+!BUILD_STATUS.md
+
+# Configurações com secrets
+docker-compose.production.yml
+easypanel-production.yml
+deploy-production.sh
+build-and-push.sh
+organize-repo.sh
