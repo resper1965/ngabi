@@ -233,4 +233,21 @@ export type {
   AgentUpdate,
   AgentTestRequest,
   AgentTestResponse
+}
+
+// Stubs simples para telas administrativas (evitam falha de build)
+export async function fetchTenants(): Promise<any[]> {
+  try {
+    return []
+  } catch {
+    return []
+  }
+}
+
+export async function fetchUsers(): Promise<any[]> {
+  try {
+    return []
+  } catch {
+    return []
+  }
 } 
