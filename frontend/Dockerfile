@@ -5,7 +5,8 @@
 # ==========================
 FROM node:20-alpine AS builder
 
-ENV NODE_ENV=production
+ENV NODE_ENV=development
+ENV NPM_CONFIG_PRODUCTION=false
 ENV NPM_CONFIG_LOGLEVEL=warn
 
 # Dependências úteis
@@ -18,7 +19,7 @@ WORKDIR /app
 
 # Cache de dependências
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 # Copiar código da aplicação
 COPY . .
