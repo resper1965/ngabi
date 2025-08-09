@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @router.get("/", response_model=AgentList)
 @rate_limit_by_user(settings.rate_limit_chat, "1 minute")
 async def get_user_agents(
+    request: Request,
     limit: int = 50,
     offset: int = 0
 ):
@@ -902,7 +903,7 @@ async def test_agent(agent_id: str, test_message: str, tenant_id: str = None):
             # Usar LLMService para agentes básicos
             from app.core.llm_service import get_llm_service
             
-            ai_response = await llm_service.process_chat_message(
+            ai_response = await get_llm_service().process_chat_message(
                 message=test_message,
                 system_prompt=agent['system_prompt'],
                 model=agent.get('model', settings.default_chat_model),
