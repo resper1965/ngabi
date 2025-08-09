@@ -41,13 +41,23 @@ async def send_chat_message(
         if not user:
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
         
-        # Verificar cache para resposta de IA
-        cache_key = f"ai_response:{user.id}:{request.agent_id}:{hash(request.message)}"
-        cached_response = get_cached_response(cache_key)
+        # Definir contexto de cache
+        tenant_id = user.user_metadata.get('tenant_id') if getattr(user, 'user_metadata', None) else str(user.id)
+        agent_id = str(request.agent_id)
+        query = request.message
         
-        if cached_response:
+        # Verificar cache para resposta de IA
+        cached_entry = get_cached_response(tenant_id, agent_id, query)
+        if cached_entry and isinstance(cached_entry, dict) and cached_entry.get("response"):
             logger.info(f"🎯 Cache hit para usuário {user.id}")
-            return ChatResponse(**cached_response)
+            return ChatResponse(**cached_entry["response"]) if isinstance(cached_entry["response"], dict) else ChatResponse(
+                id=uuid.uuid4(),
+                message=request.message,
+                response=cached_entry["response"],
+                agent_name="",
+                chat_mode=request.chat_mode,
+                created_at=datetime.utcnow().isoformat()
+            )
         
         # Obter agente via Supabase (RLS automático)
         agent = await get_agent_by_id(str(request.agent_id))
@@ -55,7 +65,7 @@ async def send_chat_message(
             raise HTTPException(status_code=404, detail="Agente não encontrado")
         
         # Processar mensagem com IA (foco principal do n.Gabi)
-        ai_response = await _process_ai_message(request, agent)
+        ai_response = await _process_ai_message(request, agent, tenant_id)
         
         # Criar resposta
         chat_response = ChatResponse(
@@ -68,7 +78,7 @@ async def send_chat_message(
         )
         
         # Cache da resposta de IA
-        set_cached_response(cache_key, chat_response.dict(), ttl=settings.cache_ttl)
+        set_cached_response(tenant_id, agent_id, query, chat_response.dict(), ttl=settings.cache_ttl)
         
         # Salvar no histórico via Supabase (background)
         await save_chat_message(
@@ -266,7 +276,7 @@ async def create_agent(agent_data: Dict[str, Any]):
 # AI PROCESSING (Foco Principal do n.Gabi)
 # =============================================================================
 
-async def _process_ai_message(request: ChatRequest, agent: Dict[str, Any]) -> str:
+async def _process_ai_message(request: ChatRequest, agent: Dict[str, Any], tenant_id: Optional[str] = None) -> str:
     """
     Processar mensagem com IA usando OpenAI - foco principal do n.Gabi.
     """
@@ -290,12 +300,13 @@ async def _process_ai_message(request: ChatRequest, agent: Dict[str, Any]) -> st
             chat_history=chat_history,
             model=model,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            tenant_id=tenant_id,
+            agent_id=str(request.agent_id)
         )
         
         logger.info(f"🤖 IA processada: {agent['name']} -> {len(ai_response)} chars")
         return ai_response
-        
     except Exception as e:
         logger.error(f"❌ Erro no processamento de IA: {e}")
         return f"Desculpe, ocorreu um erro no processamento: {str(e)}"

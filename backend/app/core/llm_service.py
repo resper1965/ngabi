@@ -63,6 +63,8 @@ class LLMService:
         model: str = None,
         temperature: float = None,
         max_tokens: int = None,
+        tenant_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
         **kwargs
     ) -> str:
         """
@@ -75,6 +77,8 @@ class LLMService:
             model: Modelo a ser usado
             temperature: Temperatura para geração
             max_tokens: Máximo de tokens
+            tenant_id: Identificador do tenant (para cache)
+            agent_id: Identificador do agente (para cache)
             **kwargs: Parâmetros adicionais
         
         Returns:
@@ -96,12 +100,13 @@ class LLMService:
                 **kwargs
             }
             
-            # Verificar cache
-            cache_key = self._generate_cache_key(message, system_prompt, params)
-            cached_response = get_cached_response(cache_key)
-            if cached_response:
-                logger.info("🎯 Cache hit para resposta de IA")
-                return cached_response
+            # Verificar cache (quando houver contexto suficiente)
+            cache_tenant = tenant_id or "global"
+            cache_agent = agent_id or "llm"
+            cached_entry = get_cached_response(cache_tenant, cache_agent, message)
+            if cached_entry and isinstance(cached_entry, dict) and cached_entry.get("response"):
+                logger.info("🎯 Cache hit para resposta de IA (service)")
+                return cached_entry["response"]
             
             # Chamar OpenAI
             logger.info(f"🤖 Chamando OpenAI: {params['model']}")
@@ -110,7 +115,7 @@ class LLMService:
             ai_response = response.choices[0].message.content
             
             # Cache da resposta
-            set_cached_response(cache_key, ai_response, ttl=3600)  # 1 hora
+            set_cached_response(cache_tenant, cache_agent, message, ai_response, ttl=3600)
             
             logger.info(f"✅ Resposta gerada: {len(ai_response)} chars")
             return ai_response
@@ -127,6 +132,8 @@ class LLMService:
         model: str = None,
         temperature: float = None,
         max_tokens: int = None,
+        tenant_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
         **kwargs
     ):
         """
@@ -154,7 +161,7 @@ class LLMService:
             logger.info(f"🤖 Streaming OpenAI: {params['model']}")
             
             async for chunk in self.client.chat.completions.create(**params):
-                if chunk.choices[0].delta.content:
+                if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
                     
         except Exception as e:

@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     # ADDITIONAL CONFIGURATION (Fallback)
     # =============================================================================
     environment: str = Field(default="production", env="ENVIRONMENT")
-    secrets_provider: str = Field(default="vault", env="SECRETS_PROVIDER")
+    secrets_provider: str = Field(default="env", env="SECRETS_PROVIDER")
     vault_url: Optional[str] = Field(None, env="VAULT_URL")
     vault_token: Optional[str] = Field(None, env="VAULT_TOKEN")
     aws_region: Optional[str] = Field(None, env="AWS_REGION")
