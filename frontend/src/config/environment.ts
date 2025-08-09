@@ -26,7 +26,7 @@ export const environment = {
     openaiModel: import.meta.env.VITE_OPENAI_MODEL || 'gpt-3.5-turbo',
     openaiTemperature: parseFloat(import.meta.env.VITE_OPENAI_TEMPERATURE || '0.7'),
     openaiMaxTokens: parseInt(import.meta.env.VITE_OPENAI_MAX_TOKENS || '2048'),
-  }
+  },
 };
 
 // Função para obter a URL base da API

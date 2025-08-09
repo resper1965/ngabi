@@ -105,7 +105,8 @@ build-production.sh
 !TEMA_IMPLEMENTADO.md
 !DEPLOY_STATUS.md
 !IMPLEMENTACAO_PRIORIDADES_ALTAS.md
-!BUILD_STATUS.md
+            !BUILD_STATUS.md
+            !SUPABASE_RULES.md
 
 # Configurações com secrets
 docker-compose.production.yml

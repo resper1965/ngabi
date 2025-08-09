@@ -1,9 +1,24 @@
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { supabase } from '../lib/supabase'
+import { getSupabase } from '../lib/supabase'
 import { Bot, Sparkles } from 'lucide-react'
 
 export const AuthComponent = () => {
+  const supabase = getSupabase()
+
+  if (!supabase) {
+    return (
+      <div className="min-h-screen flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full space-y-4 text-center">
+          <h2 className="text-2xl font-semibold">Configuração necessária</h2>
+          <p className="text-muted-foreground">
+            Supabase não está configurado. Defina <code>VITE_SUPABASE_URL</code> e <code>VITE_SUPABASE_ANON_KEY</code> nas variáveis de ambiente.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-card to-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -68,32 +83,6 @@ export const AuthComponent = () => {
             }}
             providers={['google', 'github']}
             redirectTo={window.location.origin}
-            localization={{
-              variables: {
-                sign_in: {
-                  email_label: 'Email',
-                  password_label: 'Senha',
-                  button_label: 'Entrar',
-                  loading_button_label: 'Entrando...',
-                  social_provider_text: 'Entrar com {{provider}}',
-                  link_text: 'Já tem uma conta? Entre aqui',
-                },
-                sign_up: {
-                  email_label: 'Email',
-                  password_label: 'Senha',
-                  button_label: 'Criar conta',
-                  loading_button_label: 'Criando conta...',
-                  social_provider_text: 'Criar conta com {{provider}}',
-                  link_text: 'Não tem uma conta? Crie aqui',
-                },
-                forgotten_password: {
-                  email_label: 'Email',
-                  button_label: 'Enviar instruções de recuperação',
-                  loading_button_label: 'Enviando...',
-                  link_text: 'Esqueceu sua senha?',
-                },
-              },
-            }}
           />
         </div>
 
