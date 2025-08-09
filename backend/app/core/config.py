@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     # =============================================================================
     # SUPABASE CONFIGURATION (Infraestrutura Principal)
     # =============================================================================
-    supabase_url: str = Field(..., env="SUPABASE_URL")
-    supabase_anon_key: str = Field(..., env="SUPABASE_ANON_KEY")
+    supabase_url: Optional[str] = Field(default=None, env="SUPABASE_URL")
+    supabase_anon_key: Optional[str] = Field(default=None, env="SUPABASE_ANON_KEY")
     supabase_service_role_key: Optional[str] = Field(None, env="SUPABASE_SERVICE_ROLE_KEY")
     
     # =============================================================================
